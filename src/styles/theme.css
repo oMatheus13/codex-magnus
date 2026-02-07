@@ -1,0 +1,13 @@
+:root {
+  --bg: #0b0b13;
+  --panel: #131628;
+  --panel-2: #1b2036;
+  --accent: #2bffd1;
+  --accent-2: #ff4fd8;
+  --text: #e9f0ff;
+  --muted: #8a93b2;
+  --glow: 0 0 12px rgba(43, 255, 209, 0.45);
+  --radius: 12px;
+  --font-body: "VT323", "Courier New", monospace;
+  --font-display: "Press Start 2P", "Courier New", monospace;
+}

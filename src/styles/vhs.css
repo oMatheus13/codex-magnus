@@ -1,0 +1,59 @@
+.vhs-frame {
+  position: relative;
+  overflow: hidden;
+}
+
+.vhs-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.05) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  opacity: 0.35;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  z-index: 3;
+}
+
+.vhs-frame::after {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background-image: radial-gradient(
+      circle at 20% 20%,
+      rgba(255, 79, 216, 0.12),
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 80% 70%,
+      rgba(43, 255, 209, 0.1),
+      transparent 55%
+    );
+  opacity: 0.45;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  animation: vhs-noise 1.4s steps(2) infinite;
+  z-index: 2;
+}
+
+.vhs-frame > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes vhs-noise {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-2%, 1%, 0);
+  }
+  100% {
+    transform: translate3d(1%, -1%, 0);
+  }
+}
