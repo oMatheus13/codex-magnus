@@ -1,0 +1,31 @@
+.button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  transition: 0.2s ease;
+}
+
+.button.primary {
+  background: rgba(43, 255, 209, 0.18);
+  border-color: rgba(43, 255, 209, 0.6);
+  box-shadow: var(--glow);
+}
+
+.button.ghost {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--muted);
+}
+
+.button.danger {
+  border-color: rgba(255, 120, 120, 0.6);
+  color: #ffb3b3;
+  background: rgba(255, 120, 120, 0.14);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

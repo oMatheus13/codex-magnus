@@ -1,17 +1,14 @@
 import { HabitList } from '../components/HabitList'
-import { TurnSelector } from '../components/TurnSelector'
+import { oficinaSections } from '../data/oficina'
 
 export function Today() {
   return (
     <div className="page">
       <header className="page-header">
-        <h1>Hoje</h1>
-        <p>Progresso rapido para manter o ritmo diario.</p>
+        <h1>Home</h1>
+        <p>Controle rapido dos habitos do dia.</p>
       </header>
-      <div className="page-grid">
-        <TurnSelector />
-        <HabitList />
-      </div>
+      <HabitList sections={oficinaSections} />
     </div>
   )
 }

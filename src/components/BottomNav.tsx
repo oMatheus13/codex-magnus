@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom'
 
 const links = [
-  { to: '/', label: 'Hoje', end: true },
-  { to: '/board', label: 'Tabuleiro' },
-  { to: '/workshop', label: 'Oficina' },
-  { to: '/history', label: 'Historico' },
+  { to: '/', label: 'Home', end: true },
+  { to: '/iter-vitus', label: 'Iter Vitus' },
+  { to: '/memoriam-victoriae', label: 'Memoriam Victoriae' },
+  { to: '/officina-virtutum', label: 'Officina Virtutum' },
+  { to: '/loja', label: 'Lojinha' },
 ]
 
 export function BottomNav() {

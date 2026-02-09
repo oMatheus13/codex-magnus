@@ -1,24 +1,49 @@
-const habits = [
-  { id: 'agua', label: 'Beber agua' },
-  { id: 'movimento', label: 'Movimento 20 min' },
-  { id: 'leitura', label: 'Leitura' },
-  { id: 'sono', label: 'Sono regular' },
-]
+import type { HabitSection, HabitItem } from '../data/oficina'
 
-export function HabitList() {
+type HabitListProps = {
+  sections: HabitSection[]
+}
+
+const HabitRow = ({ habit }: { habit: HabitItem }) => {
+  return (
+    <li className="habit-item">
+      <label className="habit-label">
+        <input type="checkbox" defaultChecked={false} />
+        <span className="habit-text">{habit.label}</span>
+      </label>
+      <div className="habit-meta">
+        <span className="habit-points">+{habit.points}</span>
+      </div>
+    </li>
+  )
+}
+
+export function HabitList({ sections }: HabitListProps) {
   return (
     <section className="card">
       <div className="card-title">Habitos de hoje</div>
-      <ul className="habit-list">
-        {habits.map((habit) => (
-          <li key={habit.id} className="habit-item">
-            <label className="habit-label">
-              <input type="checkbox" defaultChecked={false} />
-              <span>{habit.label}</span>
-            </label>
-          </li>
+      <div className="habit-sections">
+        {sections.map((section) => (
+          <div key={section.id} className="habit-section">
+            <div className="habit-section-title">{section.title}</div>
+            <ul className="habit-list">
+              {section.habits.map((habit) => (
+                <HabitRow key={habit.id} habit={habit} />
+              ))}
+            </ul>
+            {section.subSections.map((subSection) => (
+              <div key={subSection.id} className="habit-subsection">
+                <div className="habit-subtitle">{subSection.title}</div>
+                <ul className="habit-list">
+                  {subSection.habits.map((habit) => (
+                    <HabitRow key={habit.id} habit={habit} />
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         ))}
-      </ul>
+      </div>
     </section>
   )
 }

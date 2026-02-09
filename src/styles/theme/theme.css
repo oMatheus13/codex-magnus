@@ -8,6 +8,6 @@
   --muted: #8a93b2;
   --glow: 0 0 12px rgba(43, 255, 209, 0.45);
   --radius: 12px;
-  --font-body: "VT323", "Courier New", monospace;
-  --font-display: "Press Start 2P", "Courier New", monospace;
+  --font-body: "Space Grotesk", "Trebuchet MS", sans-serif;
+  --font-display: "Oxanium", "Trebuchet MS", sans-serif;
 }

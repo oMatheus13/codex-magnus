@@ -1,0 +1,7 @@
+.game-view {
+  height: 60vh;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid rgba(43, 255, 209, 0.2);
+  background: #08090f;
+}

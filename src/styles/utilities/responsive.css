@@ -1,0 +1,27 @@
+@media (min-width: 768px) {
+  .app-main {
+    padding: calc(var(--topbar-height) + 24px + env(safe-area-inset-top)) 40px
+      calc(var(--bottomnav-height) + 24px + env(safe-area-inset-bottom));
+  }
+
+  .page-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .profile-card-top {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .bottom-nav {
+    width: min(520px, calc(100% - 32px));
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    border-radius: 16px 16px 0 0;
+  }
+}

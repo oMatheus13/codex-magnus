@@ -1,0 +1,23 @@
+.app-shell {
+  min-height: 100vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  padding: calc(var(--topbar-height) + 18px + env(safe-area-inset-top)) 18px
+    calc(var(--bottomnav-height) + 18px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+.auth-main {
+  padding: 0;
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+  height: 100dvh;
+}

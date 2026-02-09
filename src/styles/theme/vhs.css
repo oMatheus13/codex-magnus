@@ -1,11 +1,13 @@
 .vhs-frame {
   position: relative;
   overflow: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .vhs-frame::before {
   content: '';
-  position: absolute;
+  position: fixed;
   inset: 0;
   background-image: repeating-linear-gradient(
     0deg,
@@ -17,13 +19,13 @@
   opacity: 0.35;
   pointer-events: none;
   mix-blend-mode: screen;
-  z-index: 3;
+  z-index: 9999;
 }
 
 .vhs-frame::after {
   content: '';
-  position: absolute;
-  inset: -20%;
+  position: fixed;
+  inset: 0;
   background-image: radial-gradient(
       circle at 20% 20%,
       rgba(255, 79, 216, 0.12),
@@ -38,7 +40,7 @@
   pointer-events: none;
   mix-blend-mode: screen;
   animation: vhs-noise 1.4s steps(2) infinite;
-  z-index: 2;
+  z-index: 9998;
 }
 
 .vhs-frame > * {

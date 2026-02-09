@@ -1,0 +1,136 @@
+.profile-card-top {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.profile-avatar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.avatar-button {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.file-input {
+  display: none;
+}
+
+.profile-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profile-row {
+  display: grid;
+  gap: 6px;
+  position: relative;
+}
+
+.profile-field {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.profile-value {
+  font-size: 15px;
+  color: var(--text);
+}
+
+.profile-static {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+
+.profile-input input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(8, 10, 18, 0.8);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.profile-prefix {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.profile-help {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.profile-message {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--accent);
+}
+
+.locked-badge {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.2);
+  width: fit-content;
+}
+
+.profile-card .avatar {
+  position: relative;
+}
+
+.profile-empty {
+  margin-bottom: 12px;
+  color: var(--muted);
+}
+
+.stats-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.profile-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.detail-value {
+  color: var(--text);
+  text-align: right;
+  word-break: break-word;
+}
