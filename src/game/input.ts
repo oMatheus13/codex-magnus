@@ -1,14 +1,22 @@
 export type PanHandler = (dx: number, dy: number) => void
 
+export type PanOptions = {
+  shouldStart?: (event: PointerEvent) => boolean
+}
+
 export function attachPanHandlers(
   target: HTMLElement,
   onPan: PanHandler,
+  options: PanOptions = {},
 ): () => void {
   let isActive = false
   let lastX = 0
   let lastY = 0
 
   const onPointerDown = (event: PointerEvent) => {
+    if (options.shouldStart && !options.shouldStart(event)) {
+      return
+    }
     isActive = true
     lastX = event.clientX
     lastY = event.clientY

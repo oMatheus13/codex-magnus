@@ -1,8 +1,30 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type CSSProperties,
+} from 'react'
 import type { User } from '@supabase/supabase-js'
 import { Link } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 import { AVATAR_BUCKET, getAvatarSignedUrl } from '../services/avatar'
+import {
+  clearDevUser,
+  getDevUser,
+  subscribeDevSession,
+  updateDevUser,
+  type DevUser,
+} from '../services/devSession'
+import { calculateHabitPointsStats } from '../core/habitStats'
+import { estimateDailyMoves } from '../core/progression'
+import { oficinaHabits } from '../data/oficina'
+import { getSolarisWallet, subscribeSolaris } from '../services/solaris'
+import {
+  getDiceInventory,
+  subscribeDiceInventory,
+} from '../services/diceInventory'
 
 const MAX_AVATAR_INPUT_BYTES = 8 * 1024 * 1024
 const MAX_AVATAR_EDGE = 512
@@ -24,8 +46,15 @@ const formatDate = (value?: string) => {
 const normalizeHandle = (value: string) =>
   value.trim().replace(/^@/, '').replace(/\s+/g, '')
 
+const formatNumber = (value: number, digits = 0) =>
+  value.toLocaleString('pt-BR', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  })
+
 export function Profile() {
   const [user, setUser] = useState<User | null>(null)
+  const [devUser, setDevUser] = useState<DevUser | null>(() => getDevUser())
   const [displayName, setDisplayName] = useState('')
   const [username, setUsername] = useState('')
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
@@ -34,6 +63,10 @@ export function Profile() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [wallet, setWallet] = useState(() => getSolarisWallet())
+  const [diceInventory, setDiceInventory] = useState(() =>
+    getDiceInventory(),
+  )
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -56,26 +89,42 @@ export function Profile() {
     }
   }, [])
 
-  const avatarPath = user?.user_metadata?.avatar_path as string | undefined
+  useEffect(() => {
+    return subscribeDevSession(() => {
+      setDevUser(getDevUser())
+    })
+  }, [])
+
+  useEffect(() => {
+    return subscribeSolaris(() => setWallet(getSolarisWallet()))
+  }, [])
+
+  useEffect(() => {
+    return subscribeDiceInventory(() => setDiceInventory(getDiceInventory()))
+  }, [])
+
+  const activeUser = user ?? devUser
+  const isDevSession = Boolean(devUser && !user)
+  const avatarPath = activeUser?.user_metadata?.avatar_path as string | undefined
   const avatarFallback =
-    (user?.user_metadata?.avatar_url as string | undefined) ||
-    (user?.user_metadata?.avatar as string | undefined) ||
-    (user?.user_metadata?.picture as string | undefined) ||
-    (user?.user_metadata?.photo as string | undefined)
+    (activeUser?.user_metadata?.avatar_url as string | undefined) ||
+    (activeUser?.user_metadata?.avatar as string | undefined) ||
+    (activeUser?.user_metadata?.picture as string | undefined) ||
+    (activeUser?.user_metadata?.photo as string | undefined)
 
   const baseDisplayName =
-    (user?.user_metadata?.display_name as string | undefined) ||
-    (user?.user_metadata?.name as string | undefined) ||
-    user?.email ||
+    (activeUser?.user_metadata?.display_name as string | undefined) ||
+    (activeUser?.user_metadata?.name as string | undefined) ||
+    activeUser?.email ||
     'Usuario'
 
   const storedUsername =
-    (user?.user_metadata?.username as string | undefined) ||
-    (user?.user_metadata?.handle as string | undefined)
+    (activeUser?.user_metadata?.username as string | undefined) ||
+    (activeUser?.user_metadata?.handle as string | undefined)
 
   const usernameUpdatedAt =
-    (user?.user_metadata?.username_updated_at as string | undefined) ||
-    (user?.user_metadata?.username_set_at as string | undefined)
+    (activeUser?.user_metadata?.username_updated_at as string | undefined) ||
+    (activeUser?.user_metadata?.username_set_at as string | undefined)
 
   const lastUsernameChange = usernameUpdatedAt
     ? new Date(usernameUpdatedAt)
@@ -95,11 +144,11 @@ export function Profile() {
   const usernameLocked = Boolean(storedUsername) && !canEditUsername
 
   useEffect(() => {
-    if (!user) return
+    if (!activeUser) return
     setDisplayName(baseDisplayName)
     setUsername(storedUsername ?? '')
     setAvatarPreview(null)
-  }, [user, baseDisplayName, storedUsername])
+  }, [activeUser, baseDisplayName, storedUsername])
 
   useEffect(() => {
     let isActive = true
@@ -140,7 +189,22 @@ export function Profile() {
     return '@usuario'
   }, [storedUsername, username])
 
-  if (!user) {
+  const habitStats = useMemo(() => calculateHabitPointsStats(oficinaHabits), [])
+  const moveStats = useMemo(
+    () =>
+      estimateDailyMoves({
+        estimatedDailyPoints: habitStats.estimatedDailyPoints,
+      }),
+    [habitStats.estimatedDailyPoints],
+  )
+  const totalSolaris =
+    (wallet.morning ?? 0) + (wallet.afternoon ?? 0) + (wallet.night ?? 0)
+  const totalDice =
+    (diceInventory.aurora ?? 0) +
+    (diceInventory.vesper ?? 0) +
+    (diceInventory.noctis ?? 0)
+
+  if (!activeUser) {
     return (
       <div className="page">
         <header className="page-header">
@@ -165,6 +229,7 @@ export function Profile() {
     normalizedUsername !== storedUsername
   const isBusy = isSaving || isProcessing
   const currentAvatar = avatarPreview ?? avatarRemoteUrl
+  const canRemoveAvatar = Boolean(currentAvatar)
 
   const syncProfile = async (payload: Record<string, string | null>) => {
     if (!user) return
@@ -193,6 +258,23 @@ export function Profile() {
     setIsSaving(true)
     setMessage(null)
     setError(null)
+
+    if (isDevSession) {
+      const updated = updateDevUser({
+        user_metadata: {
+          display_name: data.display_name,
+        },
+      })
+
+      if (!updated) {
+        setError('Falha ao atualizar no modo dev')
+      } else {
+        setMessage('Perfil atualizado (dev)')
+      }
+
+      setIsSaving(false)
+      return
+    }
 
     const { data: result, error: updateError } = await supabase.auth.updateUser({
       data,
@@ -251,6 +333,29 @@ export function Profile() {
       return
     }
     const now = new Date().toISOString()
+
+    if (isDevSession) {
+      setIsSaving(true)
+      setMessage(null)
+      setError(null)
+
+      const updated = updateDevUser({
+        user_metadata: {
+          username: normalized,
+          username_updated_at: now,
+        },
+      })
+
+      if (!updated) {
+        setError('Falha ao atualizar no modo dev')
+      } else {
+        setMessage('Perfil atualizado (dev)')
+      }
+
+      setIsSaving(false)
+      return
+    }
+
     setIsSaving(true)
     setMessage(null)
     setError(null)
@@ -298,10 +403,38 @@ export function Profile() {
   }
 
   const handleSaveAvatar = async (blob: Blob, previewUrl: string) => {
-    if (!user) return
+    if (!user && !isDevSession) return
     setIsSaving(true)
     setMessage('Salvando foto...')
     setError(null)
+
+    if (isDevSession) {
+      try {
+        const dataUrl = await blobToDataUrl(blob)
+        const updated = updateDevUser({
+          user_metadata: {
+            avatar_url: dataUrl,
+            avatar_path: null,
+          },
+        })
+
+        if (!updated) {
+          throw new Error('Falha ao salvar no modo dev')
+        }
+
+        if (previewUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(previewUrl)
+        }
+        setAvatarPreview(null)
+        setAvatarRemoteUrl(dataUrl)
+        setMessage('Foto atualizada (dev)')
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Falha ao salvar a foto')
+      } finally {
+        setIsSaving(false)
+      }
+      return
+    }
 
     try {
       const filePath = `avatars/${user.id}/profile.webp`
@@ -338,6 +471,71 @@ export function Profile() {
       setMessage('Foto atualizada')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao salvar a foto')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleRemoveAvatar = async () => {
+    if ((!user && !isDevSession) || isBusy || !canRemoveAvatar) return
+    setIsSaving(true)
+    setMessage('Removendo foto...')
+    setError(null)
+
+    if (isDevSession) {
+      const updated = updateDevUser({
+        user_metadata: {
+          avatar_url: null,
+          avatar_path: null,
+        },
+      })
+
+      if (!updated) {
+        setError('Falha ao remover no modo dev')
+      } else {
+        if (avatarPreview?.startsWith('blob:')) {
+          URL.revokeObjectURL(avatarPreview)
+        }
+        setAvatarPreview(null)
+        setAvatarRemoteUrl(null)
+        setMessage('Foto removida (dev)')
+      }
+
+      setIsSaving(false)
+      return
+    }
+
+    try {
+      if (avatarPath) {
+        const { error: removeError } = await supabase.storage
+          .from(AVATAR_BUCKET)
+          .remove([avatarPath])
+
+        if (removeError) {
+          throw new Error(removeError.message)
+        }
+      }
+
+      const { data: result, error: updateError } =
+        await supabase.auth.updateUser({
+          data: {
+            avatar_path: null,
+          },
+        })
+
+      if (updateError) {
+        throw new Error(updateError.message)
+      }
+
+      if (avatarPreview?.startsWith('blob:')) {
+        URL.revokeObjectURL(avatarPreview)
+      }
+      setUser(result.user)
+      setAvatarPreview(null)
+      setAvatarRemoteUrl(null)
+      setMessage('Foto removida')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Falha ao remover a foto')
     } finally {
       setIsSaving(false)
     }
@@ -391,6 +589,20 @@ export function Profile() {
     return blob
   }
 
+  const blobToDataUrl = (blob: Blob) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          resolve(reader.result)
+        } else {
+          reject(new Error('Falha ao ler a imagem'))
+        }
+      }
+      reader.onerror = () => reject(new Error('Falha ao ler a imagem'))
+      reader.readAsDataURL(blob)
+    })
+
   const handlePickAvatar = () => {
     fileInputRef.current?.click()
   }
@@ -423,12 +635,17 @@ export function Profile() {
   const handleSignOut = async () => {
     setIsSaving(true)
     setError(null)
+    if (isDevSession) {
+      clearDevUser()
+      setIsSaving(false)
+      return
+    }
     await supabase.auth.signOut()
     setIsSaving(false)
   }
 
   const handleDeleteAccount = async () => {
-    if (!user || isBusy) return
+    if (isBusy || (!user && !isDevSession)) return
     const confirmed = window.confirm('Apagar conta? Essa acao e definitiva.')
     if (!confirmed) return
     const typed = window.prompt('Digite APAGAR para confirmar')
@@ -437,6 +654,13 @@ export function Profile() {
     setIsSaving(true)
     setError(null)
     setMessage(null)
+
+    if (isDevSession) {
+      clearDevUser()
+      setMessage('Conta dev removida')
+      setIsSaving(false)
+      return
+    }
 
     const { error: deleteError } = await supabase.rpc('delete_user')
 
@@ -474,6 +698,14 @@ export function Profile() {
                   </span>
                 )}
               </div>
+            </button>
+            <button
+              className="button danger avatar-remove"
+              type="button"
+              onClick={handleRemoveAvatar}
+              disabled={isBusy || !canRemoveAvatar}
+            >
+              Remover foto
             </button>
             <input
               ref={fileInputRef}
@@ -553,16 +785,106 @@ export function Profile() {
 
       <section className="stats-grid">
         <div className="card stat-card">
-          <div className="stat-value">0</div>
+          <div className="stat-value">{formatNumber(totalSolaris, 0)}</div>
           <div className="stat-label">Solaris totais</div>
         </div>
         <div className="card stat-card">
-          <div className="stat-value">{formatDate(user.created_at)}</div>
+          <div className="stat-value">{formatDate(activeUser.created_at)}</div>
           <div className="stat-label">Conta criada</div>
         </div>
         <div className="card stat-card">
-          <div className="stat-value">0</div>
-          <div className="stat-label">Estatisticas do jogo</div>
+          <div className="stat-value">{formatNumber(totalDice, 0)}</div>
+          <div className="stat-label">Dados base</div>
+        </div>
+        <div className="card stat-card">
+          <div className="stat-value">
+            {formatNumber(moveStats.movesPerDay, 1)}
+          </div>
+          <div className="stat-label">Casas por dia (estim.)</div>
+        </div>
+      </section>
+
+      <section className="shop-metrics profile-metrics">
+        <div className="shop-metrics-header">
+          <div>
+            <div className="shop-metrics-title">Painel de estimativa</div>
+            <div className="shop-metrics-subtitle">
+              Baseado nos habitos cadastrados, incluindo sazonais.
+            </div>
+          </div>
+          <div className="shop-metrics-chip">Projecao diaria</div>
+        </div>
+        <div className="shop-metrics-grid">
+          <div className="shop-metric">
+            <span className="shop-metric-label">Pontos totais</span>
+            <strong className="shop-metric-value">
+              {formatNumber(habitStats.totalPoints, 0)}
+            </strong>
+            <span className="shop-metric-helper">soma geral</span>
+          </div>
+          <div className="shop-metric">
+            <span className="shop-metric-label">Estimativa diaria</span>
+            <strong className="shop-metric-value">
+              {formatNumber(habitStats.estimatedDailyPoints, 1)}
+            </strong>
+            <span className="shop-metric-helper">pontos por dia</span>
+          </div>
+          <div className="shop-metric">
+            <span className="shop-metric-label">Captação diaria</span>
+            <strong className="shop-metric-value">
+              {formatNumber(habitStats.estimatedDailyPercent, 1)}%
+            </strong>
+            <span className="shop-metric-helper">peso diario</span>
+          </div>
+        </div>
+        <div className="shop-estimate">
+          <div className="shop-estimate-row">
+            <span>Ritmo diario estimado</span>
+            <strong>{formatNumber(habitStats.estimatedDailyPercent, 1)}%</strong>
+          </div>
+          <div className="shop-estimate-bar" aria-hidden="true">
+            <span
+              style={
+                {
+                  width: `${habitStats.estimatedDailyPercent}%`,
+                } as CSSProperties
+              }
+            />
+          </div>
+        </div>
+        <div className="shop-frequency">
+          <div className="shop-frequency-title">Distribuicao por frequencia</div>
+          <div className="shop-frequency-grid">
+            {(['daily', 'weekly', 'monthly', 'quarterly'] as const).map(
+              (freq) => (
+                <div key={freq} className="shop-frequency-card">
+                  <span>
+                    {freq === 'daily'
+                      ? 'Diario'
+                      : freq === 'weekly'
+                        ? 'Semanal'
+                        : freq === 'monthly'
+                          ? 'Mensal'
+                          : 'Trimestral'}
+                  </span>
+                  <strong>{formatNumber(habitStats.totals[freq], 0)}</strong>
+                </div>
+              ),
+            )}
+          </div>
+        </div>
+        <div className="profile-progress">
+          <div className="profile-progress-title">Estimativa de movimento</div>
+          <div className="profile-progress-grid">
+            <div>
+              <span>Casas por semana</span>
+              <strong>{formatNumber(moveStats.movesPerWeek, 1)}</strong>
+            </div>
+            <div>
+              <span>Casas em 2 semanas</span>
+              <strong>{formatNumber(moveStats.movesPerTwoWeeks, 1)}</strong>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -570,11 +892,11 @@ export function Profile() {
         <div className="card-title">Dados completos</div>
         <div className="detail-row">
           <span>Email</span>
-          <span className="detail-value">{user.email}</span>
+          <span className="detail-value">{activeUser.email}</span>
         </div>
         <div className="detail-row">
           <span>ID</span>
-          <span className="detail-value">{user.id}</span>
+          <span className="detail-value">{activeUser.id}</span>
         </div>
       </section>
 

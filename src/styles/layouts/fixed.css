@@ -12,6 +12,24 @@
   border-bottom: 1px solid rgba(43, 255, 209, 0.2);
 }
 
+.top-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+  overflow: visible;
+}
+
+.config-button {
+  padding: 6px 10px;
+  font-size: 10px;
+}
+
+.top-left .profile-button {
+  flex-shrink: 0;
+}
+
 .profile {
   display: flex;
   align-items: center;
@@ -75,7 +93,24 @@
 .top-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  row-gap: 6px;
+  flex-shrink: 0;
+}
+
+.topbar-divider {
+  width: 1px;
+  height: 26px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(255, 255, 255, 0.35),
+    transparent
+  );
+  margin: 0 4px;
+  opacity: 0.7;
 }
 
 .solaris-stack {
@@ -94,6 +129,21 @@
   background: rgba(0, 0, 0, 0.35);
 }
 
+.solaris-item--morning {
+  background: linear-gradient(135deg, #ff9f3f, #ff7cb2);
+  border-color: rgba(255, 165, 90, 0.5);
+}
+
+.solaris-item--afternoon {
+  background: linear-gradient(135deg, #5d3bff 0%, #ff5db1 55%, #ffd86b 100%);
+  border-color: rgba(255, 184, 77, 0.45);
+}
+
+.solaris-item--night {
+  background: linear-gradient(135deg, #3a7cff, #0b173b);
+  border-color: rgba(90, 124, 255, 0.4);
+}
+
 .solaris-icon {
   width: 22px;
   height: 22px;
@@ -105,7 +155,55 @@
 .solaris-amount {
   font-family: var(--font-display);
   font-size: 10px;
-  color: var(--accent);
+  color: #fef7ff;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.45);
+}
+
+.dice-stack {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dice-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.dice-item--aurora {
+  background: linear-gradient(135deg, rgba(12, 47, 42, 0.9), rgba(43, 255, 209, 0.35));
+  border-color: rgba(43, 255, 209, 0.35);
+}
+
+.dice-item--vesper {
+  background: linear-gradient(135deg, rgba(36, 29, 61, 0.95), rgba(255, 79, 216, 0.35));
+  border-color: rgba(255, 79, 216, 0.35);
+}
+
+.dice-item--noctis {
+  background: linear-gradient(135deg, rgba(27, 28, 42, 0.95), rgba(90, 124, 255, 0.35));
+  border-color: rgba(90, 124, 255, 0.35);
+}
+
+.dice-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.dice-icon text {
+  font-size: 18px;
+  font-family: var(--font-display);
+}
+
+.dice-amount {
+  font-family: var(--font-display);
+  font-size: 10px;
+  color: var(--text);
 }
 
 .icon-button {

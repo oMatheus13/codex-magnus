@@ -30,10 +30,6 @@ const titleAssets: Record<string, { base: string; glow: string }> = {
 export function Workshop() {
   return (
     <div className="page">
-      <header className="page-header">
-        <h1>Officina Virtutum</h1>
-        <p>Catalogo de habitos, secoes e valores de solaris.</p>
-      </header>
       <div className="workshop-list">
         {oficinaSections.map((section) => {
           const assets = titleAssets[section.latinKey]

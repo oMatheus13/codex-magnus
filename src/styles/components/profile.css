@@ -22,6 +22,12 @@
   cursor: pointer;
 }
 
+.avatar-remove {
+  padding: 6px 10px;
+  font-size: 10px;
+  align-self: flex-start;
+}
+
 .file-input {
   display: none;
 }
@@ -113,6 +119,40 @@
 .stats-grid {
   display: grid;
   gap: 12px;
+}
+
+.profile-metrics {
+  margin-top: 4px;
+}
+
+.profile-progress {
+  display: grid;
+  gap: 8px;
+}
+
+.profile-progress-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--muted);
+}
+
+.profile-progress-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.profile-progress-grid span {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.profile-progress-grid strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--text);
 }
 
 .profile-details {

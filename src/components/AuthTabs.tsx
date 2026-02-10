@@ -1,23 +1,29 @@
-import { NavLink } from 'react-router-dom'
+export type AuthTab = 'login' | 'signup'
 
-const tabs = [
-  { to: '/login', label: 'Entrar' },
-  { to: '/criar-conta', label: 'Criar conta' },
+const tabs: Array<{ id: AuthTab; label: string }> = [
+  { id: 'login', label: 'Entrar' },
+  { id: 'signup', label: 'Criar conta' },
 ]
 
-export function AuthTabs() {
+type AuthTabsProps = {
+  activeTab: AuthTab
+  onChange: (tab: AuthTab) => void
+}
+
+export function AuthTabs({ activeTab, onChange }: AuthTabsProps) {
   return (
-    <div className="auth-tabs" aria-label="Autenticacao">
+    <div className="auth-tabs" role="tablist" aria-label="Autenticacao">
       {tabs.map((tab) => (
-        <NavLink
-          key={tab.to}
-          to={tab.to}
-          className={({ isActive }) =>
-            `auth-tab${isActive ? ' is-active' : ''}`
-          }
+        <button
+          key={tab.id}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === tab.id}
+          className={`auth-tab${activeTab === tab.id ? ' is-active' : ''}`}
+          onClick={() => onChange(tab.id)}
         >
           {tab.label}
-        </NavLink>
+        </button>
       ))}
     </div>
   )

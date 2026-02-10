@@ -2,20 +2,45 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '../services/supabase'
+import { getDevUser, subscribeDevSession, type DevUser } from '../services/devSession'
 import { getAvatarSignedUrl } from '../services/avatar'
+import {
+  getSolarisWallet,
+  subscribeSolaris,
+  type SolarisType,
+} from '../services/solaris'
 import solarisMorning from '../assets/solaris/Solaris Manhã.png'
 import solarisAfternoon from '../assets/solaris/Solaris Tarde.png'
 import solarisNight from '../assets/solaris/Solaris Noite.png'
+import { MusicPlayer } from './MusicPlayer'
+import { diceCatalog } from '../data/dice'
+import {
+  getDiceInventory,
+  subscribeDiceInventory,
+  type DiceInventory,
+} from '../services/diceInventory'
+import { DiceIcon } from './DiceIcon'
 
-const solarisIcons = [
-  { id: 'morning', src: solarisMorning },
-  { id: 'afternoon', src: solarisAfternoon },
-  { id: 'night', src: solarisNight },
+const solarisIcons: Array<{
+  id: SolarisType
+  src: string
+  label: string
+}> = [
+  { id: 'morning', src: solarisMorning, label: 'Manha' },
+  { id: 'afternoon', src: solarisAfternoon, label: 'Tarde' },
+  { id: 'night', src: solarisNight, label: 'Noite' },
 ]
 
 export function TopBar() {
   const [user, setUser] = useState<User | null>(null)
+  const [devUser, setDevUser] = useState<DevUser | null>(() => getDevUser())
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [solarisCounts, setSolarisCounts] = useState(() =>
+    getSolarisWallet(),
+  )
+  const [diceInventory, setDiceInventory] = useState<DiceInventory>(() =>
+    getDiceInventory(),
+  )
 
   useEffect(() => {
     let isActive = true
@@ -37,12 +62,31 @@ export function TopBar() {
     }
   }, [])
 
-  const avatarPath = user?.user_metadata?.avatar_path as string | undefined
+  useEffect(() => {
+    return subscribeDevSession(() => {
+      setDevUser(getDevUser())
+    })
+  }, [])
+
+  useEffect(() => {
+    return subscribeSolaris(() => {
+      setSolarisCounts(getSolarisWallet())
+    })
+  }, [])
+
+  useEffect(() => {
+    return subscribeDiceInventory(() => {
+      setDiceInventory(getDiceInventory())
+    })
+  }, [])
+
+  const activeUser = user ?? devUser
+  const avatarPath = activeUser?.user_metadata?.avatar_path as string | undefined
   const avatarFallback =
-    (user?.user_metadata?.avatar_url as string | undefined) ||
-    (user?.user_metadata?.avatar as string | undefined) ||
-    (user?.user_metadata?.picture as string | undefined) ||
-    (user?.user_metadata?.photo as string | undefined)
+    (activeUser?.user_metadata?.avatar_url as string | undefined) ||
+    (activeUser?.user_metadata?.avatar as string | undefined) ||
+    (activeUser?.user_metadata?.picture as string | undefined) ||
+    (activeUser?.user_metadata?.photo as string | undefined)
 
   useEffect(() => {
     let isActive = true
@@ -69,58 +113,82 @@ export function TopBar() {
   }, [avatarPath])
 
   const displayName =
-    (user?.user_metadata?.display_name as string | undefined) ||
-    (user?.user_metadata?.name as string | undefined) ||
-    user?.email ||
+    (activeUser?.user_metadata?.display_name as string | undefined) ||
+    (activeUser?.user_metadata?.name as string | undefined) ||
+    activeUser?.email ||
     'Visitante'
   const handle =
-    (user?.user_metadata?.username as string | undefined) ||
-    (user?.user_metadata?.handle as string | undefined) ||
-    user?.email?.split('@')[0]
-  const status = user ? `@${handle ?? 'usuario'}` : 'Sem login'
+    (activeUser?.user_metadata?.username as string | undefined) ||
+    (activeUser?.user_metadata?.handle as string | undefined) ||
+    activeUser?.email?.split('@')[0]
+  const status = activeUser ? `@${handle ?? 'usuario'}` : 'Sem login'
 
   return (
     <header className="top-bar">
-      {user ? (
-        <Link className="profile-button" to="/perfil">
-          <div className="profile">
-            <div className="avatar">
-              {avatarUrl || avatarFallback ? (
-                <img src={avatarUrl ?? avatarFallback} alt="" />
-              ) : (
-                <span className="avatar-fallback" aria-hidden="true">
-                  CM
-                </span>
-              )}
+      <div className="top-left">
+        {activeUser ? (
+          <Link className="profile-button" to="/perfil">
+            <div className="profile">
+              <div className="avatar">
+                {avatarUrl || avatarFallback ? (
+                  <img src={avatarUrl ?? avatarFallback} alt="" />
+                ) : (
+                  <span className="avatar-fallback" aria-hidden="true">
+                    CM
+                  </span>
+                )}
+              </div>
+              <div className="profile-info">
+                <span className="profile-name">{displayName}</span>
+                <span className="profile-status">{status}</span>
+              </div>
             </div>
-            <div className="profile-info">
-              <span className="profile-name">{displayName}</span>
-              <span className="profile-status">{status}</span>
-            </div>
-          </div>
-        </Link>
-      ) : (
-        <Link className="button ghost" to="/login">
-          Entrar
-        </Link>
-      )}
+          </Link>
+        ) : (
+          <Link className="button ghost" to="/login">
+            Entrar
+          </Link>
+        )}
+        <button className="icon-button config-button" type="button">
+          Config
+        </button>
+        <MusicPlayer />
+      </div>
       <div className="top-actions">
         <div className="solaris-stack">
           {solarisIcons.map((icon) => (
-            <div key={icon.id} className="solaris-item">
+            <div
+              key={icon.id}
+              className={`solaris-item solaris-item--${icon.id}`}
+              title={icon.label}
+            >
               <img
                 className="solaris-icon"
                 src={icon.src}
                 alt=""
                 aria-hidden="true"
               />
-              <span className="solaris-amount">0</span>
+              <span className="solaris-amount">
+                {solarisCounts[icon.id]}
+              </span>
             </div>
           ))}
         </div>
-        <button className="icon-button" type="button">
-          Config
-        </button>
+        <div className="topbar-divider" aria-hidden="true" />
+        <div className="dice-stack">
+          {diceCatalog.map((item) => (
+            <div key={item.id} className={`dice-item dice-item--${item.id}`}>
+              <DiceIcon
+                variant={item.id}
+                label={`${item.faces}`}
+                className="dice-icon"
+              />
+              <span className="dice-amount">
+                {diceInventory[item.id] ?? 0}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </header>
   )

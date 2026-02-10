@@ -20,9 +20,9 @@ Nao e um jogo competitivo. E um sistema de rotina com comportamento e feedback d
 - Codigo modular, separando logica e visual.
 
 ## Estilo visual
-- Estetica retro 80s, VHS, pixel art.
+- Estetica retro 80s, VHS, neon, retrowave, vapowave.
 - Scanlines, ruido leve, glow discreto.
-- Paleta limitada e tipografia pixel.
+- Paleta limitada e tipografia estilo retro.
 
 ## Elementos principais do sistema
 1) Oficina Virtutum: tabela onde habitos e tarefas sao registrados.
@@ -117,7 +117,9 @@ Nao e um jogo competitivo. E um sistema de rotina com comportamento e feedback d
 - Financeiro: atingir valor na reserva de emergencia.
 
 ## Multiplicadores e mecanicas extras
-- Dado personalizado: dados D6 comprados com Solaris no fim do turno.
+- Dado personalizado: dados D6 comprados com Solaris Manhã.
+- Dado personalizado: dados D8 comprados com Solaris Tarde.
+- Dado personalizado: dados D10 comprados com Solaris Noite.
 - Bonus de consistencia: completar o mesmo habito por X dias seguidos gera bonus.
 - Desafios diarios e semanais: completar conjuntos especificos gera bonus.
 - Bonus de sequencia: apos 5 dias seguidos, habito vale +1 Solaris.

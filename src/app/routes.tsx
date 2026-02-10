@@ -2,23 +2,25 @@ import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { supabase } from '../services/supabase'
+import { getDevUser, subscribeDevSession, type DevUser } from '../services/devSession'
 import { Today } from '../pages/Today'
 import { Board } from '../pages/Board'
 import { Workshop } from '../pages/Workshop'
 import { Album } from '../pages/Album'
 import { Shop } from '../pages/Shop'
-import { Login } from '../pages/Login'
-import { SignUp } from '../pages/SignUp'
+import { Auth } from '../pages/Auth'
 import { Profile } from '../pages/Profile'
 import { RetroTitle } from '../pages/RetroTitle'
 
 type AuthState = {
   session: Session | null
+  devUser: DevUser | null
   loading: boolean
 }
 
 const useAuthSession = (): AuthState => {
   const [session, setSession] = useState<Session | null>(null)
+  const [devUser, setDevUser] = useState<DevUser | null>(() => getDevUser())
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -44,7 +46,13 @@ const useAuthSession = (): AuthState => {
     }
   }, [])
 
-  return { session, loading }
+  useEffect(() => {
+    return subscribeDevSession(() => {
+      setDevUser(getDevUser())
+    })
+  }, [])
+
+  return { session, devUser, loading }
 }
 
 function RequireAuth({ auth }: { auth: AuthState }) {
@@ -56,7 +64,7 @@ function RequireAuth({ auth }: { auth: AuthState }) {
     )
   }
 
-  if (!auth.session) {
+  if (!auth.session && !auth.devUser) {
     return <Navigate to="/login" replace />
   }
 
@@ -78,7 +86,7 @@ function RedirectIfAuth({
     )
   }
 
-  if (auth.session) {
+  if (auth.session || auth.devUser) {
     return <Navigate to="/" replace />
   }
 
@@ -102,15 +110,7 @@ export function AppRoutes() {
         path="/login"
         element={
           <RedirectIfAuth auth={auth}>
-            <Login />
-          </RedirectIfAuth>
-        }
-      />
-      <Route
-        path="/criar-conta"
-        element={
-          <RedirectIfAuth auth={auth}>
-            <SignUp />
+            <Auth />
           </RedirectIfAuth>
         }
       />
