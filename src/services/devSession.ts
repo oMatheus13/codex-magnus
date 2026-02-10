@@ -14,11 +14,6 @@ const buildDevUser = (overrides?: Partial<DevUser>): DevUser => {
     id: 'dev-local-user',
     email: 'dev@codex.local',
     created_at: now,
-    user_metadata: {
-      display_name: 'Dev',
-      username: 'dev',
-      is_dev: true,
-    },
     ...overrides,
     user_metadata: {
       display_name: 'Dev',
@@ -97,4 +92,3 @@ export const subscribeDevSession = (handler: () => void) => {
     window.removeEventListener('storage', onStorage)
   }
 }
-

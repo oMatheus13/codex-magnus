@@ -123,3 +123,19 @@
     height: 60vh;
   }
 }
+
+@media (max-width: 600px) {
+  .game-view {
+    height: 52vh;
+    min-height: 320px;
+  }
+
+  .dice-button {
+    padding: 8px;
+  }
+
+  .dice-button-icon {
+    width: 34px;
+    height: 34px;
+  }
+}

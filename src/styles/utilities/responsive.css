@@ -25,3 +25,71 @@
     border-radius: 16px 16px 0 0;
   }
 }
+
+@media (max-width: 720px) {
+  :root {
+    --topbar-height: 152px;
+    --bottomnav-height: 64px;
+  }
+
+  .app-main {
+    padding: calc(var(--topbar-height) + 12px + env(safe-area-inset-top)) 14px
+      calc(var(--bottomnav-height) + 12px + env(safe-area-inset-bottom));
+  }
+
+  .top-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: calc(12px + env(safe-area-inset-top)) 14px 12px;
+  }
+
+  .top-left {
+    flex: none;
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    row-gap: 8px;
+  }
+
+  .profile-name {
+    font-size: 10px;
+  }
+
+  .profile-status {
+    font-size: 9px;
+  }
+
+  .top-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .topbar-divider {
+    width: 100%;
+    height: 1px;
+    margin: 0;
+  }
+
+  .solaris-stack,
+  .dice-stack {
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+
+  .solaris-item,
+  .dice-item {
+    padding: 4px 5px;
+  }
+
+  .bottom-nav {
+    padding: 6px 10px calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .nav-link {
+    padding: 6px 4px;
+    font-size: 8px;
+  }
+}

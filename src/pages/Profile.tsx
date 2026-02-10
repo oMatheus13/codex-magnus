@@ -436,8 +436,15 @@ export function Profile() {
       return
     }
 
+    const currentUser = user
+    if (!currentUser) {
+      setError('Sessao expirada, faça login novamente')
+      setIsSaving(false)
+      return
+    }
+
     try {
-      const filePath = `avatars/${user.id}/profile.webp`
+      const filePath = `avatars/${currentUser.id}/profile.webp`
       const { error: uploadError } = await supabase.storage
         .from(AVATAR_BUCKET)
         .upload(filePath, blob, {
