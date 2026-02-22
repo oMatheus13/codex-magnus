@@ -52,6 +52,17 @@
   box-shadow: var(--glow);
 }
 
+.music-button.is-spotify {
+  border-color: rgba(29, 185, 84, 0.6);
+  color: #1db954;
+  box-shadow: 0 0 12px rgba(29, 185, 84, 0.35);
+}
+
+.music-button.is-ghost {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--muted);
+}
+
 .music-tools {
   display: flex;
   align-items: center;
@@ -117,6 +128,13 @@
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: rgba(8, 10, 18, 0.8);
   color: var(--text);
+}
+
+.music-spotify-note {
+  font-size: 10px;
+  color: var(--muted);
+  display: block;
+  padding: 2px 0;
 }
 
 .music-volume-slider {

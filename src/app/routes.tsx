@@ -11,6 +11,7 @@ import { Shop } from '../pages/Shop'
 import { Auth } from '../pages/Auth'
 import { Profile } from '../pages/Profile'
 import { RetroTitle } from '../pages/RetroTitle'
+import { SpotifyCallback } from '../pages/SpotifyCallback'
 
 type AuthState = {
   session: Session | null
@@ -114,6 +115,7 @@ export function AppRoutes() {
           </RedirectIfAuth>
         }
       />
+      <Route path="/spotify/callback" element={<SpotifyCallback />} />
       <Route path="/retro-title" element={<RetroTitle />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

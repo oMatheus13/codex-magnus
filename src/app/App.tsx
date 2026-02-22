@@ -7,7 +7,9 @@ import { startUserSync } from '../services/userSync'
 
 export function App() {
   const location = useLocation()
-  const hideChrome = location.pathname === '/login'
+  const hideChrome =
+    location.pathname === '/login' ||
+    location.pathname === '/spotify/callback'
 
   useEffect(() => startUserSync(), [])
 
