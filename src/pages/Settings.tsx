@@ -61,7 +61,7 @@ const formatNumber = (value: number, digits = 0) =>
     maximumFractionDigits: digits,
   })
 
-export function Profile() {
+export function Settings() {
   const [user, setUser] = useState<User | null>(null)
   const [devUser, setDevUser] = useState<DevUser | null>(() => getDevUser())
   const [displayName, setDisplayName] = useState('')
@@ -213,6 +213,9 @@ export function Profile() {
     (diceInventory.aurora ?? 0) +
     (diceInventory.vesper ?? 0) +
     (diceInventory.noctis ?? 0)
+  const totalDiceLabel = import.meta.env.DEV
+    ? '∞'
+    : formatNumber(totalDice, 0)
 
   if (!activeUser) {
     return (
@@ -737,8 +740,8 @@ export function Profile() {
   return (
     <div className="page">
       <header className="page-header">
-        <h1>Perfil</h1>
-        <p>Dados da conta e estatisticas pessoais.</p>
+        <h1>Configuracoes</h1>
+        <p>Perfil, estatisticas e ajustes pessoais.</p>
       </header>
 
       <section className="card profile-card">
@@ -853,7 +856,7 @@ export function Profile() {
           <div className="stat-label">Conta criada</div>
         </div>
         <div className="card stat-card">
-          <div className="stat-value">{formatNumber(totalDice, 0)}</div>
+          <div className="stat-value">{totalDiceLabel}</div>
           <div className="stat-label">Dados base</div>
         </div>
         <div className="card stat-card">

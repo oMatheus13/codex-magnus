@@ -49,6 +49,7 @@ export function GameView() {
   )
   const [rollResult, setRollResult] = useState<RollResult | null>(null)
   const [isRolling, setIsRolling] = useState(false)
+  const isDev = import.meta.env.DEV
 
   useEffect(() => {
     const host = hostRef.current
@@ -158,6 +159,7 @@ export function GameView() {
           <div className="dice-panel">
             {diceCatalog.map((dice) => {
               const count = diceInventory[dice.id] ?? 0
+              const displayCount = isDev ? 'x∞' : `x${count}`
               return (
                 <button
                   key={dice.id}
@@ -173,7 +175,7 @@ export function GameView() {
                   />
                   <div className="dice-button-info">
                     <span className="dice-button-name">{dice.name}</span>
-                    <span className="dice-button-count">x{count}</span>
+                    <span className="dice-button-count">{displayCount}</span>
                   </div>
                 </button>
               )

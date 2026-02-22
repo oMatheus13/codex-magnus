@@ -13,6 +13,13 @@ const emptyInventory: DiceInventory = {
 
 const readStore = (): DiceInventory => {
   if (typeof window === 'undefined') return { ...emptyInventory }
+  if (import.meta.env.DEV) {
+    return {
+      aurora: 99,
+      vesper: 99,
+      noctis: 99,
+    }
+  }
   const raw = window.localStorage.getItem(STORAGE_KEY)
   if (!raw) return { ...emptyInventory }
   try {
@@ -55,6 +62,7 @@ export const addDice = (variant: DiceVariant, amount = 1) => {
 }
 
 export const consumeDice = (variant: DiceVariant, amount = 1) => {
+  if (import.meta.env.DEV) return true
   const store = readStore()
   const current = store[variant] ?? 0
   if (current < amount) return false

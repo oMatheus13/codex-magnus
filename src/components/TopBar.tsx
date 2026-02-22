@@ -12,7 +12,6 @@ import {
 import solarisMorning from '../assets/solaris/Solaris Manhã.png'
 import solarisAfternoon from '../assets/solaris/Solaris Tarde.png'
 import solarisNight from '../assets/solaris/Solaris Noite.png'
-import { MusicPlayer } from './MusicPlayer'
 import { diceCatalog } from '../data/dice'
 import {
   getDiceInventory,
@@ -41,6 +40,7 @@ export function TopBar() {
   const [diceInventory, setDiceInventory] = useState<DiceInventory>(() =>
     getDiceInventory(),
   )
+  const isDev = import.meta.env.DEV
 
   useEffect(() => {
     let isActive = true
@@ -127,7 +127,7 @@ export function TopBar() {
     <header className="top-bar">
       <div className="top-left">
         {activeUser ? (
-          <Link className="profile-button" to="/perfil">
+          <Link className="profile-button" to="/configuracoes">
             <div className="profile">
               <div className="avatar">
                 {avatarUrl || avatarFallback ? (
@@ -149,10 +149,6 @@ export function TopBar() {
             Entrar
           </Link>
         )}
-        <button className="icon-button config-button" type="button">
-          Config
-        </button>
-        <MusicPlayer />
       </div>
       <div className="top-actions">
         <div className="solaris-stack">
@@ -184,7 +180,7 @@ export function TopBar() {
                 className="dice-icon"
               />
               <span className="dice-amount">
-                {diceInventory[item.id] ?? 0}
+                {isDev ? '∞' : diceInventory[item.id] ?? 0}
               </span>
             </div>
           ))}

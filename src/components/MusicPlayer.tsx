@@ -486,7 +486,7 @@ export function MusicPlayer() {
     : currentTrack?.title ?? 'Sem faixa'
 
   return (
-    <div className="music-player" aria-label="Player de musica">
+    <div className="music-player music-player--floating music-player--navbar" aria-label="Player de musica">
       <div className="music-track" title={trackLabel}>
         {trackLabel}
       </div>

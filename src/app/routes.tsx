@@ -9,7 +9,7 @@ import { Workshop } from '../pages/Workshop'
 import { Album } from '../pages/Album'
 import { Shop } from '../pages/Shop'
 import { Auth } from '../pages/Auth'
-import { Profile } from '../pages/Profile'
+import { Settings } from '../pages/Settings'
 import { RetroTitle } from '../pages/RetroTitle'
 import { SpotifyCallback } from '../pages/SpotifyCallback'
 
@@ -105,7 +105,7 @@ export function AppRoutes() {
         <Route path="/memoriam-victoriae" element={<Album />} />
         <Route path="/officina-virtutum" element={<Workshop />} />
         <Route path="/loja" element={<Shop />} />
-        <Route path="/perfil" element={<Profile />} />
+        <Route path="/configuracoes" element={<Settings />} />
       </Route>
       <Route
         path="/login"
@@ -117,6 +117,7 @@ export function AppRoutes() {
       />
       <Route path="/spotify/callback" element={<SpotifyCallback />} />
       <Route path="/retro-title" element={<RetroTitle />} />
+      <Route path="/perfil" element={<Navigate to="/configuracoes" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

@@ -21,6 +21,19 @@
   overflow: visible;
 }
 
+.top-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.top-center .music-player {
+  pointer-events: auto;
+}
+
 .config-button {
   padding: 6px 10px;
   font-size: 10px;
@@ -224,10 +237,13 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 4px;
-  padding: 8px 12px calc(10px + env(safe-area-inset-bottom));
+  padding: 8px 12px;
   background: var(--panel);
   border-top: 1px solid rgba(43, 255, 209, 0.2);
+  height: var(--bottomnav-height);
+  align-items: center;
 }
+
 
 .nav-link {
   display: flex;

@@ -52,6 +52,14 @@
     row-gap: 8px;
   }
 
+  .top-center {
+    position: static;
+    transform: none;
+    width: 100%;
+    justify-content: center;
+  }
+
+
   .profile-name {
     font-size: 10px;
   }

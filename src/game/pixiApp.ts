@@ -41,8 +41,7 @@ type PixiOptions = {
 
 const edgeLabels: Record<BoardEdge['type'], string> = {
   main: 'Trilha principal',
-  branch: 'Bifurcacao',
-  shortcut: 'Atalho',
+  branch: 'Caminho alternativo',
 }
 
 export function createPixiApp(
@@ -76,13 +75,7 @@ export function createPixiApp(
   const board = createBoard(boardConfig)
   world.addChild(board.container)
 
-  const bounds = board.graph.bounds
-  const centerX = bounds.minX + bounds.width / 2
-  const centerY = bounds.minY + bounds.height / 2
   const camera = createCameraState()
-  camera.x = app.renderer.width / 2 - centerX
-  camera.y = app.renderer.height / 2 - centerY
-  applyCamera(world, camera)
 
   const pawn = createPawn()
   const startNodeId =
@@ -99,6 +92,9 @@ export function createPixiApp(
   }
   pawn.position.set(pawnBase.x, pawnBase.y)
   world.addChild(pawn)
+  camera.x = app.renderer.width / 2 - pawnBase.x * camera.zoom
+  camera.y = app.renderer.height / 2 - pawnBase.y * camera.zoom
+  applyCamera(world, camera)
 
   if (
     !storedBoard ||
@@ -191,7 +187,7 @@ export function createPixiApp(
     if (edges.length > 1) {
       pendingChoices = edges.map((edge) => ({
         id: `${edge.from}->${edge.to}`,
-        label: edgeLabels[edge.type],
+        label: edge.label ?? edgeLabels[edge.type],
         type: edge.type,
         toNodeId: edge.to,
       }))

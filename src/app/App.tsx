@@ -4,6 +4,7 @@ import { TopBar } from '../components/TopBar'
 import { BottomNav } from '../components/BottomNav'
 import { AppRoutes } from './routes'
 import { startUserSync } from '../services/userSync'
+import { MusicPlayer } from '../components/MusicPlayer'
 
 export function App() {
   const location = useLocation()
@@ -20,6 +21,7 @@ export function App() {
         <AppRoutes />
       </main>
       {hideChrome ? null : <BottomNav />}
+      {hideChrome ? null : <MusicPlayer />}
     </div>
   )
 }

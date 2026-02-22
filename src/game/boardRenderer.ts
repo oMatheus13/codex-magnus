@@ -8,6 +8,11 @@ export type BoardRenderResult = {
 
 const nodeFill = 0x0d101b
 
+const midPoint = (a: { x: number; y: number }, b: { x: number; y: number }) => ({
+  x: (a.x + b.x) / 2,
+  y: (a.y + b.y) / 2,
+})
+
 export function createBoard(config: BoardConfig): BoardRenderResult {
   const container = new Container()
   const graph = generateBoardGraph(config)
@@ -18,71 +23,55 @@ export function createBoard(config: BoardConfig): BoardRenderResult {
     .map((id) => nodeMap.get(id))
     .filter((node): node is NonNullable<typeof node> => Boolean(node))
   const mainSet = new Set(mainNodes.map((node) => node.id))
-  const mainRotation = new Map<string, number>()
-  if (mainNodes.length > 1) {
-    mainNodes.forEach((node, index) => {
-      const next = mainNodes[(index + 1) % mainNodes.length]
-      const angle = Math.atan2(next.y - node.y, next.x - node.x)
-      mainRotation.set(node.id, angle)
-    })
-  }
 
   const zoneLayer = new Container()
   graph.zones.forEach((zone) => {
-    const zoneNodes = graph.nodes.filter(
-      (node) => node.zoneId === zone.id && node.type !== 'branch',
-    )
+    const zoneNodes = graph.nodes.filter((node) => node.zoneId === zone.id)
     if (!zoneNodes.length) return
-    const centerX =
-      zoneNodes.reduce((sum, node) => sum + node.x, 0) / zoneNodes.length
-    const centerY =
-      zoneNodes.reduce((sum, node) => sum + node.y, 0) / zoneNodes.length
-    const radius =
-      Math.max(
-        ...zoneNodes.map((node) =>
-          Math.hypot(node.x - centerX, node.y - centerY),
-        ),
-      ) + 60
+
+    const minX = Math.min(...zoneNodes.map((node) => node.x))
+    const maxX = Math.max(...zoneNodes.map((node) => node.x))
+    const minY = Math.min(...zoneNodes.map((node) => node.y))
+    const maxY = Math.max(...zoneNodes.map((node) => node.y))
+    const padding = 120
 
     const glow = new Graphics()
-    glow.beginFill(zone.color, 0.08)
-    glow.drawCircle(centerX, centerY, radius)
+    glow.beginFill(zone.color, 0.07)
+    glow.drawRoundedRect(
+      minX - padding,
+      minY - padding,
+      maxX - minX + padding * 2,
+      maxY - minY + padding * 2,
+      140,
+    )
     glow.endFill()
     zoneLayer.addChild(glow)
   })
   container.addChild(zoneLayer)
 
   const edgeLayer = new Graphics()
-  if (mainNodes.length > 2) {
-    const midPoint = (a: { x: number; y: number }, b: { x: number; y: number }) => ({
-      x: (a.x + b.x) / 2,
-      y: (a.y + b.y) / 2,
-    })
+  if (mainNodes.length > 1) {
+    edgeLayer.lineStyle(4, 0x6dd3ff, 0.35)
+    edgeLayer.moveTo(mainNodes[0].x, mainNodes[0].y)
 
-    const firstMid = midPoint(mainNodes[0], mainNodes[1])
-    edgeLayer.lineStyle(2.4, 0x6dd3ff, 0.5)
-    edgeLayer.moveTo(firstMid.x, firstMid.y)
-
-    for (let i = 1; i < mainNodes.length; i += 1) {
+    for (let i = 1; i < mainNodes.length - 1; i += 1) {
       const current = mainNodes[i]
-      const next = mainNodes[(i + 1) % mainNodes.length]
-      const nextMid = midPoint(current, next)
-      edgeLayer.quadraticCurveTo(current.x, current.y, nextMid.x, nextMid.y)
+      const next = mainNodes[i + 1]
+      const mid = midPoint(current, next)
+      edgeLayer.quadraticCurveTo(current.x, current.y, mid.x, mid.y)
     }
-    edgeLayer.closePath()
+
+    const last = mainNodes[mainNodes.length - 1]
+    edgeLayer.lineTo(last.x, last.y)
   }
 
   graph.edges.forEach((edge) => {
-    if (edge.type === 'main') return
+    if (edge.type !== 'branch') return
     const from = nodeMap.get(edge.from)
     const to = nodeMap.get(edge.to)
     if (!from || !to) return
     const zone = zoneMap.get(from.zoneId)
-    if (edge.type === 'branch') {
-      edgeLayer.lineStyle(1.4, zone?.accent ?? 0xfff2a6, 0.3)
-    } else {
-      edgeLayer.lineStyle(1.6, 0xfff2a6, 0.4)
-    }
+    edgeLayer.lineStyle(2, zone?.accent ?? 0xfff2a6, 0.4)
     edgeLayer.moveTo(from.x, from.y)
     edgeLayer.lineTo(to.x, to.y)
   })
@@ -91,46 +80,43 @@ export function createBoard(config: BoardConfig): BoardRenderResult {
   const nodeLayer = new Container()
   graph.nodes.forEach((node) => {
     const zone = zoneMap.get(node.zoneId)
-    const color = zone?.accent ?? 0x2bffd1
+    const accent = zone?.accent ?? 0x2bffd1
     const graphic = new Graphics()
-    const isBranch = node.type === 'branch'
     const isMain = mainSet.has(node.id)
-    const rotation = isMain ? mainRotation.get(node.id) ?? 0 : 0
 
-    const drawTile = (size: number, radius: number) => {
-      graphic.drawRoundedRect(-size / 2, -size / 2, size, size, radius)
+    const drawCircle = (radius: number) => {
+      graphic.drawCircle(0, 0, radius)
     }
 
     if (node.type === 'checkpoint') {
       graphic.lineStyle(2, 0xffd27a, 0.9)
       graphic.beginFill(nodeFill, 0.95)
-      drawTile(22, 4)
+      drawCircle(12)
       graphic.endFill()
-      graphic.lineStyle(1, 0xffd27a, 0.7)
-      drawTile(30, 6)
+      graphic.lineStyle(1.5, 0xffd27a, 0.7)
+      drawCircle(18)
     } else if (node.type === 'bonus') {
-      graphic.lineStyle(1.5, 0x2bffd1, 0.9)
+      graphic.lineStyle(2, 0x2bffd1, 0.9)
       graphic.beginFill(0x10231f, 0.95)
-      drawTile(14, 4)
+      drawCircle(isMain ? 10 : 8)
       graphic.endFill()
     } else if (node.type === 'challenge') {
-      graphic.lineStyle(1.5, 0xff5f6d, 0.9)
+      graphic.lineStyle(2, 0xff5f6d, 0.9)
       graphic.beginFill(0x2b0f16, 0.95)
-      drawTile(14, 4)
+      drawCircle(isMain ? 10 : 8)
       graphic.endFill()
     } else if (node.type === 'start') {
-      graphic.lineStyle(2, 0xffffff, 0.9)
-      graphic.beginFill(color, 0.95)
-      drawTile(18, 5)
+      graphic.lineStyle(2, 0xffffff, 0.95)
+      graphic.beginFill(accent, 0.95)
+      drawCircle(12)
       graphic.endFill()
     } else {
-      graphic.lineStyle(1, color, isBranch ? 0.4 : 0.7)
-      graphic.beginFill(nodeFill, isBranch ? 0.6 : 0.9)
-      drawTile(isBranch ? 8 : 12, isBranch ? 2 : 3)
+      graphic.lineStyle(1.6, accent, isMain ? 0.7 : 0.4)
+      graphic.beginFill(nodeFill, isMain ? 0.9 : 0.55)
+      drawCircle(isMain ? 8 : 6)
       graphic.endFill()
     }
 
-    graphic.rotation = rotation
     graphic.x = node.x
     graphic.y = node.y
     nodeLayer.addChild(graphic)
