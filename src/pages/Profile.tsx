@@ -20,11 +20,20 @@ import {
 import { calculateHabitPointsStats } from '../core/habitStats'
 import { estimateDailyMoves } from '../core/progression'
 import { oficinaHabits } from '../data/oficina'
-import { getSolarisWallet, subscribeSolaris } from '../services/solaris'
+import {
+  getDateKey,
+  getSolarisWallet,
+  resetSolarisAll,
+  resetSolarisDay,
+  subscribeSolaris,
+} from '../services/solaris'
 import {
   getDiceInventory,
+  resetDiceInventory,
   subscribeDiceInventory,
 } from '../services/diceInventory'
+import { clearBoardState } from '../services/boardState'
+import { clearState as clearLegacyState } from '../services/db'
 
 const MAX_AVATAR_INPUT_BYTES = 8 * 1024 * 1024
 const MAX_AVATAR_EDGE = 512
@@ -67,6 +76,7 @@ export function Profile() {
   const [diceInventory, setDiceInventory] = useState(() =>
     getDiceInventory(),
   )
+  const [resetDate, setResetDate] = useState(() => getDateKey())
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -681,6 +691,49 @@ export function Profile() {
     setMessage('Conta apagada')
     setIsSaving(false)
   }
+
+  const handleResetAllData = () => {
+    if (isBusy) return
+    const confirmed = window.confirm(
+      'Resetar todos os dados do jogo? Essa acao remove progresso local e nuvem.',
+    )
+    if (!confirmed) return
+    const typed = window.prompt('Digite RESETAR para confirmar')
+    if (typed !== 'RESETAR') return
+
+    setIsSaving(true)
+    setError(null)
+    setMessage(null)
+
+    resetSolarisAll()
+    resetDiceInventory()
+    clearBoardState()
+    clearLegacyState()
+
+    setMessage('Dados resetados')
+    setIsSaving(false)
+  }
+
+  const handleResetDay = () => {
+    if (isBusy) return
+    if (!resetDate) return
+    const confirmed = window.confirm(
+      `Apagar dados do dia ${formatDate(resetDate)}?`,
+    )
+    if (!confirmed) return
+
+    setIsSaving(true)
+    setError(null)
+    setMessage(null)
+
+    const removed = resetSolarisDay(resetDate)
+    if (!removed) {
+      setMessage('Nenhum dado encontrado para essa data')
+    } else {
+      setMessage('Dados do dia apagados')
+    }
+    setIsSaving(false)
+  }
   return (
     <div className="page">
       <header className="page-header">
@@ -909,6 +962,36 @@ export function Profile() {
 
       <section className="card danger-card">
         <div className="card-title">Zona de risco</div>
+        <div className="detail-row reset-row">
+          <span>Resetar dados</span>
+          <button
+            className="button danger"
+            type="button"
+            onClick={handleResetAllData}
+            disabled={isBusy}
+          >
+            Resetar tudo
+          </button>
+        </div>
+        <div className="detail-row reset-row">
+          <span>Apagar dados de um dia</span>
+          <div className="danger-actions">
+            <input
+              type="date"
+              className="danger-input"
+              value={resetDate}
+              onChange={(event) => setResetDate(event.target.value)}
+            />
+            <button
+              className="button ghost"
+              type="button"
+              onClick={handleResetDay}
+              disabled={isBusy}
+            >
+              Apagar dia
+            </button>
+          </div>
+        </div>
         <div className="detail-row">
           <span>Apagar conta</span>
           <button

@@ -43,6 +43,10 @@ export const setDiceInventory = (inventory: DiceInventory) => {
   })
 }
 
+export const resetDiceInventory = () => {
+  writeStore({ ...emptyInventory })
+}
+
 export const addDice = (variant: DiceVariant, amount = 1) => {
   const store = readStore()
   store[variant] = Math.max(0, (store[variant] ?? 0) + amount)

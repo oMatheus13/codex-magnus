@@ -29,6 +29,17 @@ const createDayData = (): SolarisDayData => ({
   claimed: {},
 })
 
+const buildWalletFromStore = (store: Record<string, SolarisDayData>) => {
+  const totals = { ...emptyCounts }
+  Object.values(store).forEach((day) => {
+    const claimed = day?.claimed ?? day?.completed ?? {}
+    Object.values(claimed).forEach((entry) => {
+      totals[entry.type] += entry.points
+    })
+  })
+  return totals
+}
+
 export const getDateKey = (date = new Date()) => {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -121,6 +132,20 @@ export const setSolarisWallet = (wallet: SolarisCounts) => {
     afternoon: Math.max(0, wallet.afternoon ?? 0),
     night: Math.max(0, wallet.night ?? 0),
   })
+}
+
+export const resetSolarisAll = () => {
+  writeStore({})
+  writeWallet({ ...emptyCounts })
+}
+
+export const resetSolarisDay = (dateKey: string) => {
+  const store = readStore()
+  if (!store[dateKey]) return false
+  delete store[dateKey]
+  writeStore(store)
+  writeWallet(buildWalletFromStore(store))
+  return true
 }
 
 export const adjustSolarisWallet = (type: SolarisType, delta: number) => {

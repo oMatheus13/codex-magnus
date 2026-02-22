@@ -51,6 +51,12 @@ export const setBoardState = (state: BoardState) => {
   writeState(state)
 }
 
+export const clearBoardState = () => {
+  if (typeof window === 'undefined') return
+  window.localStorage.removeItem(STORAGE_KEY)
+  window.dispatchEvent(new Event(BOARD_EVENT))
+}
+
 export const updateBoardState = (patch: Partial<BoardState>) => {
   const current = readState()
   const next: BoardState = {

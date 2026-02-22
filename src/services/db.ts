@@ -19,3 +19,8 @@ export function loadState(): AppState | null {
 export function saveState(state: AppState) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
 }
+
+export function clearState() {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem(STORAGE_KEY)
+}
