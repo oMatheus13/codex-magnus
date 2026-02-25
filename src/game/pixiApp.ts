@@ -1,4 +1,10 @@
-import { Application, Container } from 'pixi.js'
+import {
+  Application,
+  BLEND_MODES,
+  BlurFilter,
+  Container,
+  Graphics,
+} from 'pixi.js'
 import { createBoard } from './boardRenderer'
 import { createPawn } from './pawn'
 import { calculateHabitPointsStats } from '../core/habitStats'
@@ -7,7 +13,7 @@ import { estimateDailyMoves } from '../core/progression'
 import { applyCamera, createCameraState, panCamera, zoomAtPoint } from './camera'
 import { attachPanHandlers } from './input'
 import { lerp, tween } from './animations'
-import type { BoardEdge } from './boardGenerator'
+import type { BoardEdge, BoardNode } from './boardGenerator'
 import {
   getBoardState,
   setBoardState,
@@ -37,6 +43,11 @@ export type MoveState = {
 type PixiOptions = {
   onChoice?: (options: ChoiceOption[]) => void
   onStateChange?: (state: MoveState) => void
+  onEncounter?: (payload: {
+    node: BoardNode
+    totalNodes: number
+    seed: number
+  }) => void
 }
 
 const edgeLabels: Record<BoardEdge['type'], string> = {
@@ -51,14 +62,20 @@ export function createPixiApp(
   const app = new Application({
     resizeTo: host,
     backgroundColor: 0x0b0b13,
-    antialias: false,
+    antialias: true,
     autoDensity: true,
+    resolution: Math.min(3, window.devicePixelRatio || 1),
   })
 
   host.appendChild(app.view as HTMLCanvasElement)
 
   const world = new Container()
   app.stage.addChild(world)
+
+  const scanlineLayer = new Container()
+  const scanlines = new Graphics()
+  scanlineLayer.addChild(scanlines)
+  app.stage.addChild(scanlineLayer)
 
   const habitStats = calculateHabitPointsStats(oficinaHabits)
   const progress = estimateDailyMoves({
@@ -74,8 +91,51 @@ export function createPixiApp(
 
   const board = createBoard(boardConfig)
   world.addChild(board.container)
+  const zoomFilters = [...board.zoomFilters]
+
+  const highlight = new Container()
+  const highlightGlow = new Graphics()
+  highlightGlow.beginFill(0x2bffd1, 0.22)
+  highlightGlow.drawRoundedRect(-12, -12, 24, 24, 6)
+  highlightGlow.endFill()
+  const highlightBlur = new BlurFilter(28, 2)
+  zoomFilters.push({ filter: highlightBlur, baseBlur: 28 })
+  highlightGlow.filters = [highlightBlur]
+  highlightGlow.blendMode = BLEND_MODES.ADD
+
+  const highlightCore = new Graphics()
+  highlightCore.beginFill(0x2bffd1, 0.04)
+  highlightCore.drawRoundedRect(-10, -10, 20, 20, 5)
+  highlightCore.endFill()
+  highlightCore.blendMode = BLEND_MODES.ADD
+
+  highlight.addChild(highlightGlow)
+  highlight.addChild(highlightCore)
+  highlight.alpha = 1
+  world.addChild(highlight)
 
   const camera = createCameraState()
+  let lastZoom = camera.zoom
+  const updateZoomFilters = () => {
+    const zoom = camera.zoom
+    zoomFilters.forEach(({ filter, baseBlur }) => {
+      filter.blur = baseBlur * zoom
+    })
+  }
+
+  const redrawScanlines = () => {
+    const width = app.renderer.width
+    const height = app.renderer.height
+    scanlines.clear()
+    scanlines.beginFill(0x05070f, 0.08)
+    for (let y = 0; y < height; y += 4) {
+      scanlines.drawRect(0, y, width, 1)
+    }
+    scanlines.endFill()
+  }
+
+  redrawScanlines()
+  app.renderer.on('resize', redrawScanlines)
 
   const pawn = createPawn()
   const startNodeId =
@@ -95,6 +155,7 @@ export function createPixiApp(
   camera.x = app.renderer.width / 2 - pawnBase.x * camera.zoom
   camera.y = app.renderer.height / 2 - pawnBase.y * camera.zoom
   applyCamera(world, camera)
+  updateZoomFilters()
 
   if (
     !storedBoard ||
@@ -113,6 +174,17 @@ export function createPixiApp(
   }
 
   const nodeMap = new Map(board.graph.nodes.map((node) => [node.id, node]))
+  const mainNodes = board.graph.mainPath
+    .map((id) => nodeMap.get(id))
+    .filter((node): node is NonNullable<typeof node> => Boolean(node))
+  const angleMap = new Map<string, number>()
+  mainNodes.forEach((node, index) => {
+    const prev = mainNodes[Math.max(0, index - 1)]
+    const next = mainNodes[Math.min(mainNodes.length - 1, index + 1)]
+    const dx = (next?.x ?? node.x) - (prev?.x ?? node.x)
+    const dy = (next?.y ?? node.y) - (prev?.y ?? node.y)
+    angleMap.set(node.id, Math.atan2(dy, dx))
+  })
   const edgeMap = new Map<string, BoardEdge>()
   const outgoing = new Map<string, BoardEdge[]>()
   board.graph.edges.forEach((edge) => {
@@ -124,6 +196,9 @@ export function createPixiApp(
   })
 
   let currentNodeId = startNode?.id ?? startNodeId
+  let highlightAlpha = 1
+  let highlightTarget = 1
+  let highlightNodeId = currentNodeId
   let remainingSteps = 0
   let moving = false
   let awaitingChoice = false
@@ -148,6 +223,14 @@ export function createPixiApp(
     notifyState()
   }
 
+  const triggerEncounter = (node: BoardNode) => {
+    options.onEncounter?.({
+      node,
+      totalNodes: board.graph.nodes.length,
+      seed: boardConfig.seed,
+    })
+  }
+
   const moveAlongEdge = (edge: BoardEdge) => {
     const fromNode = nodeMap.get(edge.from)
     const toNode = nodeMap.get(edge.to)
@@ -157,6 +240,7 @@ export function createPixiApp(
       return
     }
 
+    highlightTarget = 0
     const duration = 420
     cancelMove?.()
     cancelMove = tween(duration, (t) => {
@@ -164,8 +248,22 @@ export function createPixiApp(
       pawnBase.y = lerp(fromNode.y, toNode.y, t)
     }, () => {
       currentNodeId = edge.to
+      highlightNodeId = currentNodeId
       updateBoardState({ currentNodeId })
       remainingSteps = Math.max(0, remainingSteps - 1)
+      const nextNode = nodeMap.get(currentNodeId)
+      if (
+        remainingSteps <= 0 &&
+        nextNode &&
+        (nextNode.type === 'bonus' || nextNode.type === 'challenge')
+      ) {
+        highlightTarget = 1
+        highlightNodeId = currentNodeId
+        triggerEncounter(nextNode)
+        moving = false
+        notifyState()
+        return
+      }
       stepForward()
     })
   }
@@ -173,6 +271,8 @@ export function createPixiApp(
   const stepForward = () => {
     if (remainingSteps <= 0) {
       moving = false
+      highlightTarget = 1
+      highlightNodeId = currentNodeId
       notifyState()
       return
     }
@@ -193,6 +293,8 @@ export function createPixiApp(
       }))
       awaitingChoice = true
       options.onChoice?.(pendingChoices)
+      highlightTarget = 1
+      highlightNodeId = currentNodeId
       notifyState()
       return
     }
@@ -253,11 +355,34 @@ export function createPixiApp(
       camera.x = lerp(camera.x, targetX, 0.12)
       camera.y = lerp(camera.y, targetY, 0.12)
     }
+    if (Math.abs(camera.zoom - lastZoom) > 0.001) {
+      lastZoom = camera.zoom
+      updateZoomFilters()
+    }
     applyCamera(world, camera)
     pawn.position.set(
       pawnBase.x,
       pawnBase.y + Math.sin(performance.now() / 250) * 2,
     )
+    const highlightLerp = highlightTarget === 0 ? 0.28 : 0.16
+    highlightAlpha = lerp(highlightAlpha, highlightTarget, highlightLerp)
+    highlight.alpha = highlightAlpha
+    const highlightScale = 0.96 + highlightAlpha * 0.08
+    highlight.scale.set(highlightScale)
+    const currentNode = nodeMap.get(highlightNodeId)
+    if (currentNode) {
+      highlight.position.set(currentNode.x, currentNode.y)
+      highlight.rotation = angleMap.get(currentNodeId) ?? 0
+    }
+
+    const time = performance.now() / 1000
+    board.ambientParticles.forEach((particle) => {
+      particle.graphic.x =
+        particle.baseX + Math.sin(time * particle.speed + particle.phase) * particle.driftX
+      particle.graphic.y =
+        particle.baseY + Math.cos(time * particle.speed + particle.phase) * particle.driftY
+      particle.graphic.alpha = 0.25 + Math.sin(time * 0.6 + particle.phase) * 0.12
+    })
   })
 
   return {
@@ -267,6 +392,7 @@ export function createPixiApp(
       detachPan()
       host.removeEventListener('wheel', onWheel)
       host.removeEventListener('contextmenu', preventContext)
+      app.renderer.off('resize', redrawScanlines)
       app.destroy(true)
       host.textContent = ''
     },

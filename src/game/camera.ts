@@ -15,7 +15,7 @@ export function createCameraState(): CameraState {
     y: 0,
     zoom: 1,
     minZoom: 0.6,
-    maxZoom: 2,
+    maxZoom: 3.5,
   }
 }
 

@@ -1,0 +1,63 @@
+<svg
+  width="256"
+  height="256"
+  viewBox="0 0 256 256"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <defs>
+    <radialGradient
+      id="avatarCore"
+      cx="0"
+      cy="0"
+      r="1"
+      gradientUnits="userSpaceOnUse"
+      gradientTransform="translate(94 90) scale(118)"
+    >
+      <stop offset="0" stop-color="#2bffd1" stop-opacity="0.95" />
+      <stop offset="0.55" stop-color="#2bffd1" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient
+      id="avatarSheen"
+      x1="64"
+      y1="48"
+      x2="192"
+      y2="208"
+      gradientUnits="userSpaceOnUse"
+    >
+      <stop offset="0" stop-color="#ff4fd8" stop-opacity="0.45" />
+      <stop offset="0.6" stop-color="#ff4fd8" stop-opacity="0" />
+    </linearGradient>
+    <filter
+      id="avatarGlow"
+      x="-50%"
+      y="-50%"
+      width="200%"
+      height="200%"
+      color-interpolation-filters="sRGB"
+    >
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feColorMatrix
+        in="blur"
+        type="matrix"
+        values="0 0 0 0 0.1686 0 0 0 0 1 0 0 0 0 0.8196 0 0 0 0.6 0"
+      />
+    </filter>
+  </defs>
+
+  <rect width="256" height="256" rx="28" fill="#0b0b13" />
+  <g filter="url(#avatarGlow)">
+    <circle cx="128" cy="128" r="92" fill="#0b0b13" />
+  </g>
+  <circle cx="128" cy="128" r="92" fill="#0b0b13" />
+  <circle cx="128" cy="128" r="92" fill="url(#avatarCore)" />
+  <circle cx="128" cy="128" r="92" fill="url(#avatarSheen)" />
+  <circle
+    cx="128"
+    cy="128"
+    r="92"
+    stroke="#2bffd1"
+    stroke-opacity="0.5"
+    stroke-width="2"
+  />
+</svg>

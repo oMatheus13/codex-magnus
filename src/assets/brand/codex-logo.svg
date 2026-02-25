@@ -1,0 +1,42 @@
+<svg
+  width="256"
+  height="256"
+  viewBox="0 0 256 256"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <defs>
+    <linearGradient id="ring" x1="40" y1="40" x2="216" y2="216">
+      <stop offset="0" stop-color="#ff7ad9" />
+      <stop offset="1" stop-color="#5fe1ff" />
+    </linearGradient>
+    <radialGradient id="core" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(128 128) rotate(90) scale(78)">
+      <stop offset="0" stop-color="#f7fcff" />
+      <stop offset="0.5" stop-color="#a2f0ff" />
+      <stop offset="1" stop-color="#3aa7ff" />
+    </radialGradient>
+    <linearGradient id="facet" x1="96" y1="88" x2="160" y2="176">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.9" />
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="48" fill="#070b14" />
+  <circle cx="128" cy="128" r="102" fill="#0b1224" />
+  <path
+    d="M 186 64 A 72 72 0 1 0 186 192"
+    stroke="url(#ring)"
+    stroke-width="22"
+    stroke-linecap="round"
+  />
+  <polygon
+    points="128 74 172 104 164 160 128 190 92 160 84 104"
+    fill="url(#core)"
+    stroke="#c5f5ff"
+    stroke-width="2"
+  />
+  <polygon
+    points="128 86 154 110 148 156 128 174 108 156 102 110"
+    fill="url(#facet)"
+    opacity="0.9"
+  />
+</svg>

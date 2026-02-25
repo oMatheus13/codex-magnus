@@ -35,72 +35,65 @@
   color: var(--muted);
 }
 
-.album-book {
-  --page-gap: 14px;
-  --page-pad: 14px;
-  --page-width: calc(
-    (100% - (var(--page-pad) * 2) - var(--page-gap)) / 2
-  );
-  position: relative;
-  padding: var(--page-pad);
+.album-viewport {
+  display: grid;
+  place-items: center;
+  padding: 16px;
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.06);
-  background: linear-gradient(135deg, rgba(10, 14, 24, 0.95), rgba(4, 6, 12, 0.95));
+  background: linear-gradient(
+    135deg,
+    rgba(10, 14, 24, 0.95),
+    rgba(4, 6, 12, 0.95)
+  );
   box-shadow: 0 24px 40px rgba(0, 0, 0, 0.45);
-  perspective: 1400px;
   overflow: hidden;
   touch-action: pan-y;
+}
+
+.album-flipbook {
+  width: min(96vw, 960px);
+  height: auto;
+  margin: 0 auto;
   user-select: none;
-  cursor: grab;
 }
 
-.album-book.is-dragging {
-  cursor: grabbing;
-}
-
-.album-book::before {
-  content: '';
-  position: absolute;
-  top: var(--page-pad);
-  bottom: var(--page-pad);
-  left: 50%;
-  width: 2px;
-  transform: translateX(-1px);
-  background: linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.08) 20%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.08) 80%, transparent 100%);
-  pointer-events: none;
-}
-
-.album-spread {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--page-gap);
-  min-height: 480px;
+.album-sheet {
   position: relative;
-  z-index: 1;
-}
-
-.album-page-card {
-  position: relative;
-  padding: 18px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: radial-gradient(circle at 50% 20%, rgba(63, 124, 255, 0.08), rgba(8, 10, 18, 0.95));
-  min-height: 450px;
   overflow: hidden;
-  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.5);
+  background: #0b0f1c;
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.55);
 }
 
-.album-page-card::after {
+.album-sheet.hard {
+  background: #0a0d18;
+}
+
+.album-sheet::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.02) 1px, transparent 1px, transparent 4px);
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.02),
+    rgba(255, 255, 255, 0.02) 1px,
+    transparent 1px,
+    transparent 4px
+  );
   opacity: 0.3;
   pointer-events: none;
 }
 
-.album-page-card.is-empty {
-  background: rgba(8, 10, 18, 0.6);
+.album-page-content {
+  position: relative;
+  height: 100%;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .album-page-header {
@@ -131,8 +124,12 @@
   display: grid;
   place-items: center;
   text-align: center;
-  gap: 6px;
-  background: radial-gradient(circle at 30% 20%, rgba(255, 91, 194, 0.18), rgba(6, 8, 16, 0.96));
+  gap: 8px;
+  background: radial-gradient(
+    circle at 30% 20%,
+    rgba(255, 91, 194, 0.2),
+    rgba(6, 8, 16, 0.96)
+  );
 }
 
 .album-cover-title {
@@ -155,10 +152,20 @@
   color: var(--muted);
 }
 
+.album-back {
+  display: grid;
+  place-items: center;
+  background: radial-gradient(
+    circle at 50% 30%,
+    rgba(43, 255, 209, 0.1),
+    rgba(6, 8, 16, 0.96)
+  );
+}
+
 .album-index-list {
   list-style: none;
   padding: 0;
-  margin: 16px 0 0;
+  margin: 12px 0 0;
   display: grid;
   gap: 10px;
 }
@@ -190,7 +197,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
-  margin-top: 18px;
+  margin-top: 12px;
 }
 
 .album-slot {
@@ -211,75 +218,6 @@
   inset: 6px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.album-flip {
-  position: absolute;
-  top: var(--page-pad);
-  bottom: var(--page-pad);
-  width: var(--page-width);
-  transform-style: preserve-3d;
-  z-index: 4;
-  pointer-events: none;
-}
-
-.album-flip.is-next {
-  left: calc(var(--page-pad) + var(--page-width) + var(--page-gap));
-  transform-origin: left center;
-  animation: albumFlipNext 720ms ease forwards;
-}
-
-.album-flip.is-prev {
-  left: var(--page-pad);
-  transform-origin: right center;
-  animation: albumFlipPrev 720ms ease forwards;
-}
-
-.album-flip-face {
-  position: absolute;
-  inset: 0;
-  backface-visibility: hidden;
-  transform-style: preserve-3d;
-}
-
-.album-flip-back {
-  transform: rotateY(180deg);
-}
-
-.album-flip .album-page-card {
-  height: 100%;
-}
-
-@keyframes albumFlipNext {
-  from {
-    transform: rotateY(0deg);
-  }
-  to {
-    transform: rotateY(-180deg);
-  }
-}
-
-@keyframes albumFlipPrev {
-  from {
-    transform: rotateY(0deg);
-  }
-  to {
-    transform: rotateY(180deg);
-  }
-}
-
-@media (max-width: 920px) {
-  .album-spread {
-    grid-template-columns: 1fr;
-  }
-
-  .album-book::before {
-    display: none;
-  }
-
-  .album-flip {
-    display: none;
-  }
 }
 
 @media (min-width: 860px) {

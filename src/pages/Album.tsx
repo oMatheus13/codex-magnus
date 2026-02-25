@@ -1,22 +1,63 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { albumCategories, albumPages, type AlbumPage } from '../data/album'
 
-type PageEntry = AlbumPage & { pageNumber: number }
+type FlipPage =
+  | (AlbumPage & { pageNumber: number })
+  | {
+      id: string
+      type: 'back'
+      pageNumber: number
+    }
 
-type Spread = {
-  left: PageEntry | null
-  right: PageEntry | null
+type TurnInstance = {
+  turn: (
+    action: string | Record<string, unknown>,
+    ...args: Array<string | number>
+  ) => void
+  bind: (event: string, handler: (...args: unknown[]) => void) => void
+  data: (key: string) => unknown
 }
 
-const buildSpreads = (pages: PageEntry[]) => {
-  const spreads: Spread[] = []
-  for (let i = 0; i < pages.length; i += 2) {
-    spreads.push({
-      left: pages[i] ?? null,
-      right: pages[i + 1] ?? null,
-    })
+type JQueryStatic = ((element: HTMLElement) => TurnInstance) & {
+  fn?: { turn?: unknown }
+}
+
+declare global {
+  interface Window {
+    jQuery?: JQueryStatic
+    $?: JQueryStatic
   }
-  return spreads
+}
+
+const loadScript = (id: string, src: string) =>
+  new Promise<void>((resolve, reject) => {
+    if (document.getElementById(id)) {
+      resolve()
+      return
+    }
+    const script = document.createElement('script')
+    script.id = id
+    script.src = src
+    script.async = true
+    script.onload = () => resolve()
+    script.onerror = () => reject(new Error(`Failed to load ${src}`))
+    document.body.appendChild(script)
+  })
+
+const buildPages = (): FlipPage[] => {
+  const base = albumPages.map((page, index) => ({
+    ...page,
+    pageNumber: index + 1,
+  }))
+  const withBack: FlipPage[] = [
+    ...base,
+    {
+      id: 'back-cover',
+      type: 'back',
+      pageNumber: base.length + 1,
+    },
+  ]
+  return withBack
 }
 
 const renderSlots = (count: number) =>
@@ -26,25 +67,28 @@ const renderSlots = (count: number) =>
     </div>
   ))
 
-const renderPage = (page: PageEntry | null, side: 'left' | 'right') => {
-  if (!page) {
-    return <div className={`album-page-card is-${side} is-empty`} />
-  }
-
+const renderPageContent = (page: FlipPage) => {
   if (page.type === 'cover') {
     return (
-      <div className={`album-page-card is-${side} album-cover`}>
+      <div className="album-page-content album-cover">
         <div className="album-cover-title">{page.title}</div>
         <div className="album-cover-sub">{page.subtitle}</div>
         <div className="album-cover-mark">Codex Magnus</div>
-        <div className="album-page-number">{page.pageNumber}</div>
+      </div>
+    )
+  }
+
+  if (page.type === 'back') {
+    return (
+      <div className="album-page-content album-back">
+        <div className="album-cover-mark">Finis</div>
       </div>
     )
   }
 
   if (page.type === 'index') {
     return (
-      <div className={`album-page-card is-${side} album-index`}>
+      <div className="album-page-content album-index">
         <div className="album-page-header">
           <div>
             <div className="album-page-title">{page.title}</div>
@@ -65,126 +109,123 @@ const renderPage = (page: PageEntry | null, side: 'left' | 'right') => {
             </li>
           ))}
         </ul>
-        <div className="album-page-number">{page.pageNumber}</div>
       </div>
     )
   }
 
-  return (
-    <div className={`album-page-card is-${side}`}>
-      <div className="album-page-header">
-        <div className="album-page-title">{page.category.title}</div>
-        <div className="album-page-subtitle">{page.category.latin}</div>
+  if (page.type === 'category') {
+    return (
+      <div className="album-page-content">
+        <div className="album-page-header">
+          <div className="album-page-title">{page.category.title}</div>
+          <div className="album-page-subtitle">{page.category.latin}</div>
+        </div>
+        <div
+          className="album-slot-grid"
+          style={{ '--slot-accent': page.category.accent } as CSSProperties}
+        >
+          {renderSlots(page.category.slots)}
+        </div>
       </div>
-      <div
-        className="album-slot-grid"
-        style={{ '--slot-accent': page.category.accent } as CSSProperties}
-      >
-        {renderSlots(page.category.slots)}
-      </div>
-      <div className="album-page-number">{page.pageNumber}</div>
-    </div>
-  )
+    )
+  }
+
+  return null
 }
 
 export function Album() {
-  const pages = useMemo(
-    () =>
-      albumPages.map((page, index) => ({
-        ...page,
-        pageNumber: index + 1,
-      })),
-    [],
-  )
-  const spreads = useMemo(() => buildSpreads(pages), [pages])
-  const [spreadIndex, setSpreadIndex] = useState(0)
-  const [flipDirection, setFlipDirection] = useState<'next' | 'prev' | null>(
-    null,
-  )
-  const [isDragging, setIsDragging] = useState(false)
-  const flipTimer = useRef<number | null>(null)
-  const dragRef = useRef({
-    startX: 0,
-    startY: 0,
-    active: false,
-    triggered: false,
-  })
-  const flipDuration = 720
-  const dragThreshold = 50
-  const dragAxisBias = 12
-
-  const current = spreads[spreadIndex]
-  const next = spreads[spreadIndex + 1]
-  const prev = spreads[spreadIndex - 1]
-
-  const canPrev = spreadIndex > 0 && !flipDirection
-  const canNext = spreadIndex < spreads.length - 1 && !flipDirection
-
-  const startFlip = (direction: 'next' | 'prev') => {
-    if (flipDirection) return
-    setFlipDirection(direction)
-    if (flipTimer.current) {
-      window.clearTimeout(flipTimer.current)
-    }
-    flipTimer.current = window.setTimeout(() => {
-      setSpreadIndex((currentIndex) =>
-        direction === 'next' ? currentIndex + 1 : currentIndex - 1,
-      )
-      setFlipDirection(null)
-    }, flipDuration)
-  }
+  const pages = useMemo(() => buildPages(), [])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [ready, setReady] = useState(false)
+  const flipbookRef = useRef<HTMLDivElement | null>(null)
+  const viewportRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
+    let isActive = true
+
+    loadScript('codex-jquery', '/includes/flipbook/jquery.js')
+      .then(() => loadScript('codex-turn', '/includes/flipbook/turn.js'))
+      .then(() => {
+        if (!isActive) return
+        setReady(true)
+      })
+      .catch(() => {
+        if (!isActive) return
+        setReady(false)
+      })
+
     return () => {
-      if (flipTimer.current) {
-        window.clearTimeout(flipTimer.current)
-      }
+      isActive = false
     }
   }, [])
 
-  const flipFront =
-    flipDirection === 'next' ? current?.right : current?.left
-  const flipBack =
-    flipDirection === 'next' ? next?.left : prev?.right
+  useEffect(() => {
+    if (!ready || !flipbookRef.current || !viewportRef.current) return
+    const $ = window.jQuery || window.$
+    if (!$ || !$.fn || !$.fn.turn) return
 
-  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (flipDirection) return
-    const target = event.target as HTMLElement
-    if (target.closest('button, a, input, select, textarea, [data-no-swipe]')) {
-      return
+    const $book = $(flipbookRef.current)
+    if ($book.data('turn')) {
+      $book.turn('destroy')
     }
-    dragRef.current = {
-      startX: event.clientX,
-      startY: event.clientY,
-      active: true,
-      triggered: false,
+
+    const computeSize = () => {
+      const width = Math.min(viewportRef.current?.clientWidth ?? 960, 960)
+      const safeWidth = Math.max(width, 320)
+      const height = Math.max(360, safeWidth * 0.75)
+      const display = safeWidth < 720 ? 'single' : 'double'
+      return { width: safeWidth, height, display }
     }
-    setIsDragging(true)
-    event.currentTarget.setPointerCapture(event.pointerId)
+
+    const applySize = () => {
+      const { width, height, display } = computeSize()
+      $book.turn('display', display)
+      $book.turn('size', width, height)
+    }
+
+    const { width, height, display } = computeSize()
+    $book.turn({
+      width,
+      height,
+      display,
+      autoCenter: true,
+      duration: 1200,
+      gradients: true,
+      elevation: 50,
+      when: {
+        turned: (_event: unknown, page: number) => {
+          setCurrentPage(page)
+        },
+      },
+    })
+
+    const resizeObserver = new ResizeObserver(() => applySize())
+    resizeObserver.observe(viewportRef.current)
+
+    return () => {
+      resizeObserver.disconnect()
+      if ($book.data('turn')) {
+        $book.turn('destroy')
+      }
+    }
+  }, [ready])
+
+  const handlePrev = () => {
+    const $ = window.jQuery || window.$
+    if (!$ || !flipbookRef.current) return
+    const $book = $(flipbookRef.current)
+    if ($book.data('turn')) {
+      $book.turn('previous')
+    }
   }
 
-  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    const state = dragRef.current
-    if (!state.active || state.triggered) return
-    const deltaX = event.clientX - state.startX
-    const deltaY = event.clientY - state.startY
-    if (Math.abs(deltaX) < dragThreshold) return
-    if (Math.abs(deltaX) < Math.abs(deltaY) + dragAxisBias) return
-    state.triggered = true
-    setIsDragging(false)
-    if (deltaX < 0 && canNext) {
-      startFlip('next')
-    } else if (deltaX > 0 && canPrev) {
-      startFlip('prev')
+  const handleNext = () => {
+    const $ = window.jQuery || window.$
+    if (!$ || !flipbookRef.current) return
+    const $book = $(flipbookRef.current)
+    if ($book.data('turn')) {
+      $book.turn('next')
     }
-  }
-
-  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragRef.current.active) return
-    dragRef.current.active = false
-    dragRef.current.triggered = false
-    setIsDragging(false)
-    event.currentTarget.releasePointerCapture(event.pointerId)
   }
 
   return (
@@ -196,55 +237,40 @@ export function Album() {
             <button
               type="button"
               className="button ghost"
-              onClick={() => startFlip('prev')}
-              disabled={!canPrev}
+              onClick={handlePrev}
+              disabled={!ready}
             >
               Anterior
             </button>
             <div className="album-toolbar-page">
-              Pagina {spreadIndex * 2 + 1}
-              {current?.right ? `-${spreadIndex * 2 + 2}` : ''} /{' '}
-              {pages.length}
+              Pagina {currentPage} / {pages.length}
             </div>
             <button
               type="button"
               className="button ghost"
-              onClick={() => startFlip('next')}
-              disabled={!canNext}
+              onClick={handleNext}
+              disabled={!ready}
             >
               Proxima
             </button>
           </div>
         </div>
 
-        <div
-          className={`album-book${isDragging ? ' is-dragging' : ''}`}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-        >
-          <div className="album-spread">
-            {renderPage(current?.left ?? null, 'left')}
-            {renderPage(current?.right ?? null, 'right')}
+        <div className="album-viewport" ref={viewportRef}>
+          <div className="album-flipbook" ref={flipbookRef}>
+            {pages.map((page, index) => {
+              const isHard = index === 0 || index === pages.length - 1
+              return (
+                <div
+                  key={page.id}
+                  className={`album-sheet ${isHard ? 'hard' : 'page'}`}
+                >
+                  {renderPageContent(page)}
+                  <div className="album-page-number">{page.pageNumber}</div>
+                </div>
+              )
+            })}
           </div>
-
-          {flipDirection ? (
-            <div className={`album-flip is-${flipDirection}`}>
-              <div className="album-flip-face album-flip-front">
-                {renderPage(
-                  flipFront ?? null,
-                  flipDirection === 'next' ? 'right' : 'left',
-                )}
-              </div>
-              <div className="album-flip-face album-flip-back">
-                {renderPage(
-                  flipBack ?? null,
-                  flipDirection === 'next' ? 'left' : 'right',
-                )}
-              </div>
-            </div>
-          ) : null}
         </div>
       </section>
     </div>

@@ -1,6 +1,6 @@
 .game-shell {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 240px;
+  grid-template-columns: minmax(0, 1fr) 360px;
   gap: 16px;
   align-items: start;
 }
@@ -13,12 +13,145 @@
   border: 1px solid rgba(43, 255, 209, 0.2);
   background: #08090f;
   touch-action: none;
+  position: relative;
+}
+
+.game-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.game-event-overlay {
+  position: absolute;
+  inset: auto 14px 14px 14px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.game-event-popup {
+  pointer-events: auto;
+  width: min(360px, 100%);
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(8, 10, 18, 0.92);
+  box-shadow:
+    0 0 24px rgba(43, 255, 209, 0.18),
+    inset 0 0 14px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.game-event-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.game-event-item {
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(8, 10, 18, 0.9);
+  box-shadow:
+    0 0 24px rgba(43, 255, 209, 0.18),
+    inset 0 0 14px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.game-event-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.game-event-type {
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.game-event-type.bonus {
+  color: #6dffb7;
+  border-color: rgba(109, 255, 183, 0.4);
+}
+
+.game-event-type.challenge {
+  color: #ff9f77;
+  border-color: rgba(255, 159, 119, 0.4);
+}
+
+.game-event-difficulty {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.game-event-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.game-event-description {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.game-event-reward {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(12, 16, 28, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.game-event-reward img {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.game-event-reward-dice {
+  width: 32px;
+  height: 32px;
+}
+
+.game-event-reward-label {
+  font-size: 12px;
+}
+
+.game-event-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.game-event-empty {
+  font-size: 11px;
+  color: var(--muted);
 }
 
 .game-sidebar {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.game-panel-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
 }
 
 .game-panel {
@@ -116,6 +249,10 @@
 
 @media (max-width: 960px) {
   .game-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .game-panel-row {
     grid-template-columns: 1fr;
   }
 

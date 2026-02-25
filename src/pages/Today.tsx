@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { oficinaHabits, oficinaSections } from '../data/oficina'
-import { getDateKey } from '../services/solaris'
+import { diceCatalog, type DiceVariant } from '../data/dice'
+import { DiceIcon } from '../components/DiceIcon'
+import { getDateKey, type SolarisType } from '../services/solaris'
 import {
   addGoal,
   getGoals,
@@ -9,6 +11,14 @@ import {
   toggleGoalDay,
   type Goal,
 } from '../services/goals'
+import {
+  applyBoardReward,
+  getPendingBoardEvents,
+  resolveBoardEvent,
+  subscribeBoardEvents,
+  type BoardEvent,
+  type BoardEventLogEntry,
+} from '../services/boardEvents'
 import goalCrystal from '../assets/icons/goal-crystal.svg'
 
 const buildHabitGroups = () => {
@@ -57,6 +67,23 @@ const formatDate = (dateKey: string) => {
   return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}`
 }
 
+const solarisIcons = diceCatalog.reduce(
+  (acc, item) => {
+    acc[item.currency] = item.icon
+    return acc
+  },
+  {} as Record<SolarisType, string>,
+)
+
+const solarisLabels: Record<SolarisType, string> = {
+  morning: 'Solaris da manha',
+  afternoon: 'Solaris da tarde',
+  night: 'Solaris da noite',
+}
+
+const getDiceLabel = (id: DiceVariant) =>
+  diceCatalog.find((item) => item.id === id)?.name ?? 'Dado'
+
 export function Today() {
   const [goals, setGoals] = useState(() => getGoals())
   const [selectedHabitId, setSelectedHabitId] = useState(
@@ -66,6 +93,9 @@ export function Today() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [openHistoryId, setOpenHistoryId] = useState<string | null>(null)
   const [showCompleted, setShowCompleted] = useState(false)
+  const [pendingChallenges, setPendingChallenges] = useState<
+    BoardEventLogEntry[]
+  >(() => getPendingBoardEvents().filter((entry) => entry.type === 'challenge'))
 
   const habitGroups = useMemo(() => buildHabitGroups(), [])
   const habitLookup = useMemo(() => {
@@ -76,9 +106,23 @@ export function Today() {
     return map
   }, [])
 
+  const refreshPendingChallenges = () => {
+    const next = getPendingBoardEvents().filter(
+      (entry) => entry.type === 'challenge',
+    )
+    next.sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : 1))
+    setPendingChallenges(next)
+  }
+
   useEffect(() => {
     return subscribeGoals(() => {
       setGoals(getGoals())
+    })
+  }, [])
+
+  useEffect(() => {
+    return subscribeBoardEvents(() => {
+      refreshPendingChallenges()
     })
   }, [])
 
@@ -131,306 +175,393 @@ export function Today() {
     setOpenHistoryId((current) => (current === goalId ? null : goalId))
   }
 
+  const handleChallengeComplete = (entry: BoardEventLogEntry) => {
+    applyBoardReward(entry.reward)
+    const event: BoardEvent = {
+      id: entry.eventId,
+      type: entry.type,
+      title: entry.title,
+      description: entry.description,
+      difficulty: entry.difficulty,
+      reward: entry.reward,
+    }
+    resolveBoardEvent(entry.key, entry.nodeId, event)
+    refreshPendingChallenges()
+  }
+
   const closeModal = () => setIsModalOpen(false)
 
   return (
     <div className="page">
-      <section className="home-goals">
-        <div className="card goal-panel">
-          <div className="goal-panel-header">
-            <div>
-              <div className="card-title">Metas diarias</div>
-              <div className="goal-panel-sub">
-                Escolha um habito e acompanhe sua sequencia.
-              </div>
-              {completedGoals.length > 0 ? (
-                <div className="goal-panel-meta">
-                  {completedGoals.length} metas concluidas
+      <div className="home-panels">
+        <section className="home-challenges">
+          <div className="card challenge-panel">
+            <div className="challenge-panel-header">
+              <div>
+                <div className="card-title">Desafios do tabuleiro</div>
+                <div className="challenge-panel-sub">
+                  Complete os desafios pendentes e resgate as recompensas.
                 </div>
-              ) : null}
-            </div>
-            <button
-              type="button"
-              className="button primary"
-              onClick={() => setIsModalOpen(true)}
-            >
-              Nova meta
-            </button>
-          </div>
-
-          <div className="goal-list">
-            {activeGoals.length === 0 ? (
-              <div className="goal-empty">
-                Nenhuma meta ativa no momento.
               </div>
-            ) : (
-              activeGoals.map((goal) => {
-                const completedCount = goal.completedDates.length
-                const remaining = getRemaining(goal)
-                const streak = computeStreak(goal.completedDates, todayKey)
-                const doneToday = goal.completedDates.includes(todayKey)
-                const isComplete = completedCount >= goal.targetDays
-                const isHistoryOpen = openHistoryId === goal.id
-                const historyDates = [...goal.completedDates].reverse()
-                const historySet = new Set(goal.completedDates)
-
-                return (
-                  <article key={goal.id} className="goal-item">
-                    <div className="goal-header">
-                      <div>
-                        <div className="goal-title">{goal.habitLabel}</div>
-                        <div className="goal-meta">
-                          <div
-                            className={`goal-streak${
-                              streak > 0 ? ' is-active' : ''
-                            }`}
-                          >
-                            <img
-                              className="goal-crystal"
-                              src={goalCrystal}
-                              alt=""
-                              aria-hidden="true"
-                            />
-                            <span>{streak} sequencia</span>
-                          </div>
-                          <div className="goal-total">
-                            Total {completedCount}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="goal-progress">
-                        <div className="goal-count">
-                          {completedCount}/{goal.targetDays}
-                        </div>
-                        <div className="goal-remaining">
-                          Faltam {remaining} dias
-                        </div>
-                      </div>
+            </div>
+            <div className="challenge-list">
+              {pendingChallenges.length ? (
+                pendingChallenges.map((entry) => (
+                  <article key={entry.key} className="challenge-item">
+                    <div className="challenge-item-header">
+                      <span className="challenge-type">Desafio</span>
+                      {entry.difficulty ? (
+                        <span className="challenge-difficulty">
+                          {entry.difficulty}
+                        </span>
+                      ) : null}
                     </div>
-                    <div className="goal-footer">
-                      <div className="goal-actions">
-                        <button
-                          type="button"
-                          className="button ghost"
-                          onClick={() => handleToggleDay(goal.id)}
-                        >
-                          {doneToday ? 'Desmarcar hoje' : 'Marcar hoje'}
-                        </button>
-                        <div className="goal-history-wrap">
+                    <div className="challenge-title">
+                      {entry.title || 'Desafio do tabuleiro'}
+                    </div>
+                    <p className="challenge-description">
+                      {entry.description || 'Detalhes indisponiveis no momento.'}
+                    </p>
+                    <div className="challenge-reward">
+                      {entry.reward.type === 'solaris' ? (
+                        <>
+                          <img
+                            src={solarisIcons[entry.reward.solaris]}
+                            alt={solarisLabels[entry.reward.solaris]}
+                          />
+                          <div className="challenge-reward-label">
+                            +{entry.reward.amount}{' '}
+                            {solarisLabels[entry.reward.solaris]}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <DiceIcon
+                            variant={entry.reward.dice}
+                            label="Dado"
+                            className="challenge-reward-dice"
+                          />
+                          <div className="challenge-reward-label">
+                            +{entry.reward.amount}{' '}
+                            {getDiceLabel(entry.reward.dice)}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    <div className="challenge-actions">
+                      <button
+                        type="button"
+                        className="button primary"
+                        onClick={() => handleChallengeComplete(entry)}
+                      >
+                        Marcar concluido
+                      </button>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <div className="challenge-empty">Sem desafios pendentes.</div>
+              )}
+            </div>
+          </div>
+        </section>
+        <section className="home-goals">
+          <div className="card goal-panel">
+            <div className="goal-panel-header">
+              <div>
+                <div className="card-title">Metas diarias</div>
+                <div className="goal-panel-sub">
+                  Escolha um habito e acompanhe sua sequencia.
+                </div>
+                {completedGoals.length > 0 ? (
+                  <div className="goal-panel-meta">
+                    {completedGoals.length} metas concluidas
+                  </div>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                className="button primary"
+                onClick={() => setIsModalOpen(true)}
+              >
+                Nova meta
+              </button>
+            </div>
+
+            <div className="goal-list">
+              {activeGoals.length === 0 ? (
+                <div className="goal-empty">
+                  Nenhuma meta ativa no momento.
+                </div>
+              ) : (
+                activeGoals.map((goal) => {
+                  const completedCount = goal.completedDates.length
+                  const remaining = getRemaining(goal)
+                  const streak = computeStreak(goal.completedDates, todayKey)
+                  const doneToday = goal.completedDates.includes(todayKey)
+                  const isComplete = completedCount >= goal.targetDays
+                  const isHistoryOpen = openHistoryId === goal.id
+                  const historyDates = [...goal.completedDates].reverse()
+                  const historySet = new Set(goal.completedDates)
+
+                  return (
+                    <article key={goal.id} className="goal-item">
+                      <div className="goal-header">
+                        <div>
+                          <div className="goal-title">{goal.habitLabel}</div>
+                          <div className="goal-meta">
+                            <div
+                              className={`goal-streak${
+                                streak > 0 ? ' is-active' : ''
+                              }`}
+                            >
+                              <img
+                                className="goal-crystal"
+                                src={goalCrystal}
+                                alt=""
+                                aria-hidden="true"
+                              />
+                              <span>{streak} sequencia</span>
+                            </div>
+                            <div className="goal-total">
+                              Total {completedCount}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="goal-progress">
+                          <div className="goal-count">
+                            {completedCount}/{goal.targetDays}
+                          </div>
+                          <div className="goal-remaining">
+                            Faltam {remaining} dias
+                          </div>
+                        </div>
+                      </div>
+                      <div className="goal-footer">
+                        <div className="goal-actions">
                           <button
                             type="button"
                             className="button ghost"
-                            onClick={() => handleToggleHistory(goal.id)}
-                            aria-expanded={isHistoryOpen}
+                            onClick={() => handleToggleDay(goal.id)}
                           >
-                            Historico
+                            {doneToday ? 'Desmarcar hoje' : 'Marcar hoje'}
                           </button>
-                          {isHistoryOpen ? (
-                            <div className="goal-history-popover">
-                              <div className="goal-history-title">
-                                Dias marcados
-                              </div>
-                              <div className="goal-history-calendar">
-                                {calendarDays.map((day) => {
-                                  const isDone = historySet.has(day.key)
-                                  return (
-                                    <div
-                                      key={day.key}
-                                      className={`goal-calendar-day${
-                                        isDone ? ' is-done' : ''
-                                      }${day.isToday ? ' is-today' : ''}`}
-                                    >
-                                      {day.label}
-                                    </div>
-                                  )
-                                })}
-                              </div>
-                              {historyDates.length === 0 ? (
-                                <div className="goal-history-empty">
-                                  Nenhum dia marcado ainda.
-                                </div>
-                              ) : (
-                                <ul className="goal-history-list">
-                                  {historyDates.map((date) => (
-                                    <li key={date}>{formatDate(date)}</li>
-                                  ))}
-                                </ul>
-                              )}
-                              <div className="goal-history-total">
-                                Total: {historyDates.length} dias
-                              </div>
-                            </div>
-                          ) : null}
-                        </div>
-                        <button
-                          type="button"
-                          className="button ghost"
-                          onClick={() => handleRemoveGoal(goal.id)}
-                        >
-                          Remover
-                        </button>
-                      </div>
-                    </div>
-                    <div
-                      className={`goal-reward${
-                        isComplete ? ' is-complete' : ''
-                      }`}
-                    >
-                      {isComplete
-                        ? 'Recompensa liberada: figurinha especial.'
-                        : 'Recompensa: figurinha especial.'}
-                    </div>
-                  </article>
-                )
-              })
-            )}
-          </div>
-
-          {completedGoals.length > 0 ? (
-            <div className="goal-completed">
-              <div className="goal-completed-header">
-                <div className="goal-completed-title">Historico</div>
-                <button
-                  type="button"
-                  className="button ghost"
-                  onClick={() => setShowCompleted((current) => !current)}
-                >
-                  {showCompleted ? 'Ocultar' : 'Mostrar'}
-                </button>
-              </div>
-              {showCompleted ? (
-                <div className="goal-list">
-                  {completedGoals.map((goal) => {
-                    const completedCount = goal.completedDates.length
-                    const remaining = getRemaining(goal)
-                    const streak = computeStreak(goal.completedDates, todayKey)
-                    const doneToday = goal.completedDates.includes(todayKey)
-                    const isComplete = completedCount >= goal.targetDays
-                    const isHistoryOpen = openHistoryId === goal.id
-                    const historyDates = [...goal.completedDates].reverse()
-                    const historySet = new Set(goal.completedDates)
-
-                    return (
-                      <article
-                        key={goal.id}
-                        className="goal-item is-complete"
-                      >
-                        <div className="goal-header">
-                          <div>
-                            <div className="goal-title">{goal.habitLabel}</div>
-                            <div className="goal-meta">
-                              <div
-                                className={`goal-streak${
-                                  streak > 0 ? ' is-active' : ''
-                                }`}
-                              >
-                                <img
-                                  className="goal-crystal"
-                                  src={goalCrystal}
-                                  alt=""
-                                  aria-hidden="true"
-                                />
-                                <span>{streak} sequencia</span>
-                              </div>
-                              <div className="goal-total">
-                                Total {completedCount}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="goal-progress">
-                            <div className="goal-count">
-                              {completedCount}/{goal.targetDays}
-                            </div>
-                            <div className="goal-remaining">
-                              Faltam {remaining} dias
-                            </div>
-                          </div>
-                        </div>
-                        <div className="goal-footer">
-                          <div className="goal-actions">
+                          <div className="goal-history-wrap">
                             <button
                               type="button"
                               className="button ghost"
-                              onClick={() => handleToggleDay(goal.id)}
+                              onClick={() => handleToggleHistory(goal.id)}
+                              aria-expanded={isHistoryOpen}
                             >
-                              {doneToday ? 'Desmarcar hoje' : 'Marcar hoje'}
+                              Historico
                             </button>
-                            <div className="goal-history-wrap">
+                            {isHistoryOpen ? (
+                              <div className="goal-history-popover">
+                                <div className="goal-history-title">
+                                  Dias marcados
+                                </div>
+                                <div className="goal-history-calendar">
+                                  {calendarDays.map((day) => {
+                                    const isDone = historySet.has(day.key)
+                                    return (
+                                      <div
+                                        key={day.key}
+                                        className={`goal-calendar-day${
+                                          isDone ? ' is-done' : ''
+                                        }${day.isToday ? ' is-today' : ''}`}
+                                      >
+                                        {day.label}
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                                {historyDates.length === 0 ? (
+                                  <div className="goal-history-empty">
+                                    Nenhum dia marcado ainda.
+                                  </div>
+                                ) : (
+                                  <ul className="goal-history-list">
+                                    {historyDates.map((date) => (
+                                      <li key={date}>{formatDate(date)}</li>
+                                    ))}
+                                  </ul>
+                                )}
+                                <div className="goal-history-total">
+                                  Total: {historyDates.length} dias
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+                          <button
+                            type="button"
+                            className="button ghost"
+                            onClick={() => handleRemoveGoal(goal.id)}
+                          >
+                            Remover
+                          </button>
+                        </div>
+                      </div>
+                      <div
+                        className={`goal-reward${
+                          isComplete ? ' is-complete' : ''
+                        }`}
+                      >
+                        {isComplete
+                          ? 'Recompensa liberada: figurinha especial.'
+                          : 'Recompensa: figurinha especial.'}
+                      </div>
+                    </article>
+                  )
+                })
+              )}
+            </div>
+
+            {completedGoals.length > 0 ? (
+              <div className="goal-completed">
+                <div className="goal-completed-header">
+                  <div className="goal-completed-title">Historico</div>
+                  <button
+                    type="button"
+                    className="button ghost"
+                    onClick={() => setShowCompleted((current) => !current)}
+                  >
+                    {showCompleted ? 'Ocultar' : 'Mostrar'}
+                  </button>
+                </div>
+                {showCompleted ? (
+                  <div className="goal-list">
+                    {completedGoals.map((goal) => {
+                      const completedCount = goal.completedDates.length
+                      const remaining = getRemaining(goal)
+                      const streak = computeStreak(goal.completedDates, todayKey)
+                      const doneToday = goal.completedDates.includes(todayKey)
+                      const isComplete = completedCount >= goal.targetDays
+                      const isHistoryOpen = openHistoryId === goal.id
+                      const historyDates = [...goal.completedDates].reverse()
+                      const historySet = new Set(goal.completedDates)
+
+                      return (
+                        <article
+                          key={goal.id}
+                          className="goal-item is-complete"
+                        >
+                          <div className="goal-header">
+                            <div>
+                              <div className="goal-title">{goal.habitLabel}</div>
+                              <div className="goal-meta">
+                                <div
+                                  className={`goal-streak${
+                                    streak > 0 ? ' is-active' : ''
+                                  }`}
+                                >
+                                  <img
+                                    className="goal-crystal"
+                                    src={goalCrystal}
+                                    alt=""
+                                    aria-hidden="true"
+                                  />
+                                  <span>{streak} sequencia</span>
+                                </div>
+                                <div className="goal-total">
+                                  Total {completedCount}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="goal-progress">
+                              <div className="goal-count">
+                                {completedCount}/{goal.targetDays}
+                              </div>
+                              <div className="goal-remaining">
+                                Faltam {remaining} dias
+                              </div>
+                            </div>
+                          </div>
+                          <div className="goal-footer">
+                            <div className="goal-actions">
                               <button
                                 type="button"
                                 className="button ghost"
-                                onClick={() => handleToggleHistory(goal.id)}
-                                aria-expanded={isHistoryOpen}
+                                onClick={() => handleToggleDay(goal.id)}
                               >
-                                Historico
+                                {doneToday ? 'Desmarcar hoje' : 'Marcar hoje'}
                               </button>
-                              {isHistoryOpen ? (
-                                <div className="goal-history-popover">
-                                  <div className="goal-history-title">
-                                    Dias marcados
-                                  </div>
-                                  <div className="goal-history-calendar">
-                                    {calendarDays.map((day) => {
-                                      const isDone = historySet.has(day.key)
-                                      return (
-                                        <div
-                                          key={day.key}
-                                          className={`goal-calendar-day${
-                                            isDone ? ' is-done' : ''
-                                          }${
-                                            day.isToday ? ' is-today' : ''
-                                          }`}
-                                        >
-                                          {day.label}
-                                        </div>
-                                      )
-                                    })}
-                                  </div>
-                                  {historyDates.length === 0 ? (
-                                    <div className="goal-history-empty">
-                                      Nenhum dia marcado ainda.
+                              <div className="goal-history-wrap">
+                                <button
+                                  type="button"
+                                  className="button ghost"
+                                  onClick={() => handleToggleHistory(goal.id)}
+                                  aria-expanded={isHistoryOpen}
+                                >
+                                  Historico
+                                </button>
+                                {isHistoryOpen ? (
+                                  <div className="goal-history-popover">
+                                    <div className="goal-history-title">
+                                      Dias marcados
                                     </div>
-                                  ) : (
-                                    <ul className="goal-history-list">
-                                      {historyDates.map((date) => (
-                                        <li key={date}>{formatDate(date)}</li>
-                                      ))}
-                                    </ul>
-                                  )}
-                                  <div className="goal-history-total">
-                                    Total: {historyDates.length} dias
+                                    <div className="goal-history-calendar">
+                                      {calendarDays.map((day) => {
+                                        const isDone = historySet.has(day.key)
+                                        return (
+                                          <div
+                                            key={day.key}
+                                            className={`goal-calendar-day${
+                                              isDone ? ' is-done' : ''
+                                            }${
+                                              day.isToday ? ' is-today' : ''
+                                            }`}
+                                          >
+                                            {day.label}
+                                          </div>
+                                        )
+                                      })}
+                                    </div>
+                                    {historyDates.length === 0 ? (
+                                      <div className="goal-history-empty">
+                                        Nenhum dia marcado ainda.
+                                      </div>
+                                    ) : (
+                                      <ul className="goal-history-list">
+                                        {historyDates.map((date) => (
+                                          <li key={date}>{formatDate(date)}</li>
+                                        ))}
+                                      </ul>
+                                    )}
+                                    <div className="goal-history-total">
+                                      Total: {historyDates.length} dias
+                                    </div>
                                   </div>
-                                </div>
-                              ) : null}
+                                ) : null}
+                              </div>
+                              <button
+                                type="button"
+                                className="button ghost"
+                                onClick={() => handleRemoveGoal(goal.id)}
+                                disabled={isComplete}
+                              >
+                                Remover
+                              </button>
                             </div>
-                            <button
-                              type="button"
-                              className="button ghost"
-                              onClick={() => handleRemoveGoal(goal.id)}
-                              disabled={isComplete}
-                            >
-                              Remover
-                            </button>
                           </div>
-                        </div>
-                        <div
-                          className={`goal-reward${
-                            isComplete ? ' is-complete' : ''
-                          }`}
-                        >
-                          {isComplete
-                            ? 'Recompensa liberada: figurinha especial.'
-                            : 'Recompensa: figurinha especial.'}
-                        </div>
-                      </article>
-                    )
-                  })}
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-      </section>
+                          <div
+                            className={`goal-reward${
+                              isComplete ? ' is-complete' : ''
+                            }`}
+                          >
+                            {isComplete
+                              ? 'Recompensa liberada: figurinha especial.'
+                              : 'Recompensa: figurinha especial.'}
+                          </div>
+                        </article>
+                      )
+                    })}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        </section>
+      </div>
 
       {isModalOpen ? (
         <div className="goal-modal-backdrop" onClick={closeModal}>
