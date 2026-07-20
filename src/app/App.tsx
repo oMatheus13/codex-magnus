@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, Link } from 'react-router-dom'
 import { TopBar } from '../components/TopBar'
 import { BottomNav } from '../components/BottomNav'
 import { AppRoutes } from './routes'
@@ -22,6 +22,9 @@ export function App() {
       </main>
       {hideChrome ? null : <BottomNav />}
       {hideChrome ? null : <MusicPlayer />}
+      {hideChrome ? null : (
+        <Link to="/roadmap" className="floating-roadmap-btn">🗺️ Roadmap</Link>
+      )}
     </div>
   )
 }

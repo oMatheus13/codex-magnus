@@ -175,3 +175,4 @@
   gap: 12px;
   justify-content: flex-end;
 }
+\n.floating-roadmap-btn {\n  position: fixed;\n  bottom: 80px;\n  right: 20px;\n  background: var(--color-primary);\n  color: var(--color-background);\n  padding: 10px 15px;\n  border-radius: 8px;\n  text-decoration: none;\n  font-weight: bold;\n  z-index: 100;\n  box-shadow: 0 0 10px var(--color-primary);\n  transition: transform 0.2s;\n}\n.floating-roadmap-btn:hover {\n  transform: scale(1.05);\n}\n

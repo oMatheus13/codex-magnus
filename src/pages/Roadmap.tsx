@@ -1,6 +1,4 @@
 import { useState, useEffect, useMemo } from 'react'
-import { TopBar } from '../components/TopBar'
-import { BottomNav } from '../components/BottomNav'
 import { getRoadmaps, createRoadmap, addRoadmapItem, toggleRoadmapItem, deleteRoadmap, deleteRoadmapItem, subscribeRoadmaps, type RoadmapData } from '../services/roadmaps'
 import '../styles/roadmap.css'
 
@@ -99,7 +97,6 @@ export function Roadmap() {
 
   return (
     <div className="page roadmap-page">
-      <TopBar />
       <main className="content roadmap-content">
         <section className="card title-card">
           <div className="roadmap-header">
@@ -120,7 +117,11 @@ export function Roadmap() {
           {renderProgressBar()}
         </section>
 
-        {activeRoadmap && (
+        {!activeRoadmap ? (
+          <section className="card neon-map-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <p style={{ color: 'var(--color-text-muted)' }}>Nenhum Roadmap criado. Clique em "+ Novo" para começar.</p>
+          </section>
+        ) : (
           <section className="card neon-map-container">
             <div className="organic-path-wrapper">
               <svg width={Math.max(800, (activeRoadmap.items.length * 250) + 100)} height="300" className="organic-svg">
@@ -166,7 +167,6 @@ export function Roadmap() {
           </section>
         )}
       </main>
-      <BottomNav />
     </div>
   )
 }
