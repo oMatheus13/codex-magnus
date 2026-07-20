@@ -299,44 +299,7 @@ export function generateBoardGraph(config: BoardConfig): BoardGraph {
       end: Math.min(totalNodes - 1, end),
     })
   }
-  const minClearance = nodeSpacing * 1.7
-  const minClearanceSq = minClearance * minClearance
-  const distToSegmentSq = (
-    point: { x: number; y: number },
-    a: { x: number; y: number },
-    b: { x: number; y: number },
-  ) => {
-    const abx = b.x - a.x
-    const aby = b.y - a.y
-    const apx = point.x - a.x
-    const apy = point.y - a.y
-    const denom = abx * abx + aby * aby
-    if (denom === 0) return apx * apx + apy * apy
-    const t = clamp((apx * abx + apy * aby) / denom, 0, 1)
-    const cx = a.x + abx * t
-    const cy = a.y + aby * t
-    const dx = point.x - cx
-    const dy = point.y - cy
-    return dx * dx + dy * dy
-  }
-  const isTooCloseToPath = (
-    existing: Array<{ x: number; y: number }>,
-    samples: Array<{ x: number; y: number }>,
-    skipTail = 10,
-  ) => {
-    const limit = Math.max(0, existing.length - skipTail)
-    if (limit === 0) return false
-    for (const sample of samples) {
-      for (let i = 0; i < limit - 1; i += 1) {
-        const a = existing[i]
-        const b = existing[i + 1]
-        if (distToSegmentSq(sample, a, b) < minClearanceSq) {
-          return true
-        }
-      }
-    }
-    return false
-  }
+
 
   const rawPoints: Array<{ x: number; y: number }> = []
 
