@@ -12,6 +12,7 @@ import { Auth } from '../pages/Auth'
 import { Settings } from '../pages/Settings'
 import { RetroTitle } from '../pages/RetroTitle'
 import { SpotifyCallback } from '../pages/SpotifyCallback'
+import { Roadmap } from '../pages/Roadmap'
 
 type AuthState = {
   session: Session | null
@@ -104,6 +105,7 @@ export function AppRoutes() {
         <Route path="/iter-vitus" element={<Board />} />
         <Route path="/memoriam-victoriae" element={<Album />} />
         <Route path="/officina-virtutum" element={<Workshop />} />
+        <Route path="/roadmap" element={<Roadmap />} />
         <Route path="/loja" element={<Shop />} />
         <Route path="/configuracoes" element={<Settings />} />
       </Route>

@@ -5,6 +5,7 @@ const links = [
   { to: '/iter-vitus', label: 'Iter Vitus' },
   { to: '/memoriam-victoriae', label: 'Memoriam Victoriae' },
   { to: '/officina-virtutum', label: 'Officina Virtutum' },
+  { to: '/roadmap', label: 'Roadmap' },
   { to: '/loja', label: 'Lojinha' },
 ]
 
