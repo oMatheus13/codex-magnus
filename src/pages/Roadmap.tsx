@@ -18,12 +18,6 @@ export function Roadmap() {
     return subscribeRoadmaps(() => setRoadmaps(getRoadmaps()))
   }, [])
 
-  useEffect(() => {
-    if (roadmaps.length > 0 && !activeRoadmapId) {
-      setActiveRoadmapId(roadmaps[0].id)
-    }
-  }, [roadmaps, activeRoadmapId])
-
   const activeRoadmap = useMemo(() => roadmaps.find(r => r.id === activeRoadmapId), [roadmaps, activeRoadmapId])
 
   const handleCreateRoadmap = () => {
@@ -55,16 +49,14 @@ export function Roadmap() {
     setNewItemName(''); setNewItemDesc(''); setNewItemSite(''); setNewItemGithub('')
   }
 
-  // Generates organic SVG path connecting staggered nodes
   const generatePath = (itemsCount: number) => {
     if (itemsCount === 0) return ''
-    let d = `M 50 150 ` // Start point
+    let d = `M 50 150 `
     for (let i = 0; i < itemsCount; i++) {
       const x = 50 + (i * 250)
       const nextX = x + 250
       const isUp = i % 2 === 0
       const targetY = isUp ? 80 : 220
-      
       if (i === 0) {
         d += `C ${x + 100} 150, ${nextX - 100} ${targetY}, ${nextX} ${targetY} `
       } else {
@@ -72,7 +64,6 @@ export function Roadmap() {
         d += `C ${x + 100} ${currentY}, ${nextX - 100} ${targetY}, ${nextX} ${targetY} `
       }
     }
-    // Fade out path at the end
     const lastX = 50 + (itemsCount * 250)
     const lastY = (itemsCount - 1) % 2 === 0 ? 80 : 220
     d += `C ${lastX + 100} ${lastY}, ${lastX + 200} 150, ${lastX + 250} 150`
@@ -95,77 +86,97 @@ export function Roadmap() {
     )
   }
 
-  return (
-    <div className="page roadmap-page">
-      <main className="content roadmap-content">
-        <section className="card title-card">
-          <div className="roadmap-header">
-            <h1>Roadmaps</h1>
-            <div className="roadmap-selector">
-              <select value={activeRoadmapId || ''} onChange={e => setActiveRoadmapId(e.target.value)}>
-                {roadmaps.length === 0 && <option value="">Nenhum Roadmap</option>}
-                {roadmaps.map(rm => (
-                  <option key={rm.id} value={rm.id}>{rm.name}</option>
-                ))}
-              </select>
-              <button className="button ghost sm" onClick={handleCreateRoadmap}>+ Novo</button>
-              {activeRoadmap && (
-                <button className="button danger sm" onClick={handleDeleteRoadmap} style={{ border: '1px solid #ff4444', color: '#ff4444', background: 'transparent', cursor: 'pointer' }}>Excluir Mapa</button>
-              )}
+  // Dashboard View
+  if (!activeRoadmapId) {
+    return (
+      <div className="page roadmap-page">
+        <main className="content roadmap-content">
+          <section className="card title-card">
+            <div className="roadmap-header">
+              <h1>Hub de Projetos</h1>
+              <button className="button primary sm" onClick={handleCreateRoadmap}>+ Criar Constelação</button>
             </div>
-          </div>
-          {renderProgressBar()}
-        </section>
-
-        {!activeRoadmap ? (
-          <section className="card neon-map-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <p style={{ color: 'var(--color-text-muted)' }}>Nenhum Roadmap criado. Clique em "+ Novo" para começar.</p>
+            <p className="subtitle" style={{ marginTop: '10px' }}>Seus roadmaps e trilhas de projetos.</p>
           </section>
-        ) : (
-          <section className="card neon-map-container">
-            <div className="organic-path-wrapper">
-              <svg width={Math.max(800, (activeRoadmap.items.length * 250) + 100)} height="300" className="organic-svg">
-                <path d={generatePath(activeRoadmap.items.length)} className="neon-path" fill="none" />
-              </svg>
-              
-              <div className="nodes-container">
-                {activeRoadmap.items.map((item, idx) => {
-                  const cx = 50 + ((idx + 1) * 250)
-                  const cy = idx % 2 === 0 ? 80 : 220
-                  return (
-                    <div key={item.id} className={`roadmap-node ${item.completed ? 'completed' : ''}`} style={{ left: `${cx}px`, top: `${cy}px` }}>
-                      <button className="node-circle" onClick={() => toggleRoadmapItem(activeRoadmap.id, item.id)} title="Marcar/Desmarcar"></button>
-                      <div className="node-card">
-                        <button style={{ position: 'absolute', top: '4px', right: '4px', background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }} onClick={() => deleteRoadmapItem(activeRoadmap.id, item.id)}>✕</button>
-                        <h3>{item.title}</h3>
-                        {item.description && <p>{item.description}</p>}
-                        <div className="node-links">
-                          {item.siteUrl && <a href={item.siteUrl} target="_blank" rel="noreferrer">🔗 Site</a>}
-                          {item.githubUrl && <a href={item.githubUrl} target="_blank" rel="noreferrer">💻 GitHub</a>}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
+
+          <section className="roadmaps-grid">
+            {roadmaps.length === 0 ? (
+              <div className="empty-roadmap-state">
+                <p>O vácuo espacial está vazio. Crie sua primeira constelação.</p>
               </div>
-            </div>
-            
-            {!showForm ? (
-              <button className="button ghost full-width add-node-btn" onClick={() => setShowForm(true)}>+ Adicionar Projeto</button>
             ) : (
-              <form className="add-item-form" onSubmit={handleAddItem}>
-                <input type="text" placeholder="Nome do Projeto" value={newItemName} onChange={e => setNewItemName(e.target.value)} required />
-                <textarea placeholder="Descrição (opcional)" value={newItemDesc} onChange={e => setNewItemDesc(e.target.value)} />
-                <input type="url" placeholder="Link do Site (opcional)" value={newItemSite} onChange={e => setNewItemSite(e.target.value)} />
-                <input type="url" placeholder="Link do GitHub (opcional)" value={newItemGithub} onChange={e => setNewItemGithub(e.target.value)} />
-                <div className="form-actions">
-                  <button type="button" className="button ghost" onClick={() => setShowForm(false)}>Cancelar</button>
-                  <button type="submit" className="button primary">Adicionar</button>
-                </div>
-              </form>
+              roadmaps.map(rm => {
+                const completed = rm.items.filter(i => i.completed).length
+                const total = rm.items.length
+                return (
+                  <div key={rm.id} className="card roadmap-card" onClick={() => setActiveRoadmapId(rm.id)}>
+                    <h2>{rm.name}</h2>
+                    <p>{completed} / {total} projetos concluídos</p>
+                  </div>
+                )
+              })
             )}
           </section>
-        )}
+        </main>
+      </div>
+    )
+  }
+
+  // Clean Active Roadmap View
+  return (
+    <div className="page roadmap-page clean-roadmap">
+      <main className="content roadmap-content">
+        <div className="clean-header">
+          <button className="button ghost sm" onClick={() => setActiveRoadmapId(null)}>← Voltar ao Hub</button>
+          <h2>{activeRoadmap?.name}</h2>
+          <button className="button danger sm" onClick={handleDeleteRoadmap} style={{ border: '1px solid #ff4444', color: '#ff4444', background: 'transparent' }}>Excluir Mapa</button>
+        </div>
+        
+        {renderProgressBar()}
+
+        <section className="card neon-map-container" style={{ marginTop: '20px' }}>
+          <div className="organic-path-wrapper">
+            <svg width={Math.max(800, (activeRoadmap!.items.length * 250) + 100)} height="300" className="organic-svg">
+              <path d={generatePath(activeRoadmap!.items.length)} className="neon-path" fill="none" />
+            </svg>
+            
+            <div className="nodes-container">
+              {activeRoadmap!.items.map((item, idx) => {
+                const cx = 50 + ((idx + 1) * 250)
+                const cy = idx % 2 === 0 ? 80 : 220
+                return (
+                  <div key={item.id} className={`roadmap-node ${item.completed ? 'completed' : ''}`} style={{ left: `${cx}px`, top: `${cy}px` }}>
+                    <button className="node-circle" onClick={() => toggleRoadmapItem(activeRoadmap!.id, item.id)} title="Marcar/Desmarcar"></button>
+                    <div className="node-card">
+                      <button style={{ position: 'absolute', top: '4px', right: '4px', background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }} onClick={() => deleteRoadmapItem(activeRoadmap!.id, item.id)}>✕</button>
+                      <h3>{item.title}</h3>
+                      {item.description && <p>{item.description}</p>}
+                      <div className="node-links">
+                        {item.siteUrl && <a href={item.siteUrl} target="_blank" rel="noreferrer">🔗 Site</a>}
+                        {item.githubUrl && <a href={item.githubUrl} target="_blank" rel="noreferrer">💻 GitHub</a>}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+          
+          {!showForm ? (
+            <button className="button ghost full-width add-node-btn" onClick={() => setShowForm(true)}>+ Adicionar Projeto</button>
+          ) : (
+            <form className="add-item-form" onSubmit={handleAddItem}>
+              <input type="text" placeholder="Nome do Projeto" value={newItemName} onChange={e => setNewItemName(e.target.value)} required />
+              <textarea placeholder="Descrição (opcional)" value={newItemDesc} onChange={e => setNewItemDesc(e.target.value)} />
+              <input type="url" placeholder="Link do Site (opcional)" value={newItemSite} onChange={e => setNewItemSite(e.target.value)} />
+              <input type="url" placeholder="Link do GitHub (opcional)" value={newItemGithub} onChange={e => setNewItemGithub(e.target.value)} />
+              <div className="form-actions">
+                <button type="button" className="button ghost" onClick={() => setShowForm(false)}>Cancelar</button>
+                <button type="submit" className="button primary">Adicionar</button>
+              </div>
+            </form>
+          )}
+        </section>
       </main>
     </div>
   )
