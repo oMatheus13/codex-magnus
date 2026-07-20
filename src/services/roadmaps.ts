@@ -76,6 +76,23 @@ export const toggleRoadmapItem = (roadmapId: string, itemId: string) => {
   writeRoadmaps(updated)
 }
 
+export const deleteRoadmap = (roadmapId: string) => {
+  const roadmaps = getRoadmaps()
+  const updated = roadmaps.filter(rm => rm.id !== roadmapId)
+  writeRoadmaps(updated)
+}
+
+export const deleteRoadmapItem = (roadmapId: string, itemId: string) => {
+  const roadmaps = getRoadmaps()
+  const updated = roadmaps.map(rm => {
+    if (rm.id === roadmapId) {
+      return { ...rm, items: rm.items.filter(item => item.id !== itemId) }
+    }
+    return rm
+  })
+  writeRoadmaps(updated)
+}
+
 export const subscribeRoadmaps = (handler: () => void) => {
   if (typeof window === 'undefined') return () => {}
   const onEvent = () => handler()
